@@ -241,3 +241,68 @@ export async function obterStatusAssinatura(): Promise<StatusAssinatura> {
 export async function iniciarCheckout(): Promise<{ checkoutUrl: string }> {
   return api<{ checkoutUrl: string }>('/tenant/assinatura/checkout', { method: 'POST' });
 }
+
+// ── painel superadmin (item 6) ───────────────────────────────────────────────
+
+export interface TenantSuperadmin {
+  id: string;
+  nome: string;
+  cnpj: string;
+  slug: string;
+  status: string;
+  plano: { id: string; codigo: string; nome: string };
+  qtdLojas: number;
+  mrrCentavos: number;
+  proximaCobrancaEm: string | null;
+  proximaCobrancaEstimada: boolean;
+  trialTerminaEm: string | null;
+  criadoEm: string;
+}
+
+export interface MetricasPlataforma {
+  mrrTotalCentavos: number;
+  tenantsAtivos: number;
+  tenantsEmTrial: number;
+  tenantsInadimplentes: number;
+  tenantsSuspensos: number;
+  tenantsCancelados: number;
+}
+
+export async function listarTenants(): Promise<TenantSuperadmin[]> {
+  return api<TenantSuperadmin[]>('/admin/tenants');
+}
+
+export async function obterMetricas(): Promise<MetricasPlataforma> {
+  return api<MetricasPlataforma>('/admin/metricas');
+}
+
+export async function alterarStatusTenant(
+  tenantId: string,
+  status: string,
+): Promise<TenantSuperadmin> {
+  return api<TenantSuperadmin>(`/admin/tenants/${tenantId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+/** Todos os planos, inclusive inativos — diferente de listarPlanos() (catálogo público). */
+export async function listarPlanosAdmin(): Promise<Plano[]> {
+  return api<Plano[]>('/admin/planos');
+}
+
+export interface EdicaoDePlano {
+  nome?: string;
+  precoMensalCentavos?: number;
+  precoAnualCentavos?: number | null;
+  precoPorLoja?: boolean;
+  limiteLojas?: number | null;
+  ativo?: boolean;
+}
+
+export async function editarPlano(planoId: string, dados: EdicaoDePlano): Promise<Plano> {
+  return api<Plano>(`/admin/planos/${planoId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(dados),
+  });
+}

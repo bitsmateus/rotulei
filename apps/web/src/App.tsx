@@ -4,6 +4,7 @@ import { RotaProtegida } from './auth/RotaProtegida';
 import { Entrar } from './pages/Entrar';
 import { Cadastro } from './pages/Cadastro';
 import { Estudio } from './pages/Estudio';
+import { Admin } from './pages/Admin';
 
 export function App() {
   return (
@@ -15,6 +16,10 @@ export function App() {
 
           <Route element={<RotaProtegida />}>
             <Route path="/" element={<Estudio />} />
+          </Route>
+
+          <Route element={<RotaProtegida papeis={['superadmin']} />}>
+            <Route path="/admin" element={<Admin />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

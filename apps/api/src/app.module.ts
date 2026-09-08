@@ -13,6 +13,7 @@ import { ConfigPlataformaModule } from './modules/config-plataforma/config-plata
 import { AsaasModule } from './modules/asaas/asaas.module.js';
 import { AssinaturaModule } from './modules/assinatura/assinatura.module.js';
 import { TrialModule } from './modules/trial/trial.module.js';
+import { SuperadminModule } from './modules/superadmin/superadmin.module.js';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { TrialModule } from './modules/trial/trial.module.js';
     AsaasModule,
     AssinaturaModule,
     TrialModule,
+    SuperadminModule,
   ],
   providers: [
     // Ordem importa: o limite por IP roda ANTES da autenticacao, pra rejeitar

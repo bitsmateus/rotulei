@@ -505,3 +505,47 @@ verdadeira. Troquei por `z.string().optional().transform(v => v === 'true')`,
 que compara o texto de verdade. **Vale conferir se esse padrão apareceu em
 outro lugar do projeto** — busquei e não achei mais nenhum `z.coerce.boolean()`
 no código hoje, mas é o tipo de armadilha fácil de reintroduzir sem querer.
+
+---
+
+# Item 6 (parcial) — painel superadmin — 08/09/2026
+
+Depois de reconciliar o trabalho de outra sessão (auditoria de segurança,
+commitada separado — ver `AUDITORIA.md`) e commitar minha própria parte do
+cadastro público, segui em sequência para o item 6.
+
+## 28. Escopo desta fatia: tenants, MRR, status manual e planos — não tudo
+
+O ESCOPO.md lista seis coisas para o superadmin. Fiz quatro: lista de tenants,
+métricas, suspender/reativar manualmente, e edição de preço/limite de plano.
+Deixei de fora **impersonar tenant** e **central de ajuda em vídeo** de
+propósito — cada uma merece desenho próprio:
+
+- Impersonar exige decidir como fica a trilha de auditoria (quem impersonou
+  quem, quando) e como o token gerado se distingue de um login de verdade do
+  próprio admin — não é só "gerar um JWT com o tenant certo".
+- Central de ajuda precisa de upload/link de vídeo, o que toca em Storage —
+  ainda não decidido neste projeto (Supabase Storage foi descartado junto com
+  o resto do Supabase; a alternativa seria MinIO no EasyPanel, como o
+  `DECISOES.md` original já cogitava para o item 2, mas nunca ficou necessário
+  até agora).
+
+## 29. Próxima cobrança é estimada quando o Asaas ainda não informou
+
+`assinaturas.proxima_cobranca_em` nunca é escrito em lugar nenhum do código —
+nem no checkout, nem no webhook. Isso é uma lacuna real (também apontada
+indiretamente pela pendência "conciliação" em `AUDITORIA.md`). Para a lista de
+tenants não ficar com a coluna vazia pra quase todo mundo, calculo uma
+estimativa (último pagamento confirmado + 1 ciclo) e marco
+`proximaCobrancaEstimada: true` na resposta, para o painel deixar claro que é
+um palpite, não o dado real do gateway. Quando a conciliação de webhook for
+revisada (pendência Alta do AUDITORIA.md), vale gravar a data de verdade que o
+Asaas devolve na assinatura, e essa estimativa vira só um fallback.
+
+## 30. Superadmin é redirecionado para `/admin`, não vê o estúdio
+
+Como o motor de cartaz é local ao navegador (não salva na API — pendência
+conhecida do AUDITORIA.md) e o superadmin não tem `tenantId`, deixar ele cair
+em `/` mostraria um editor de cartaz que não faz sentido pra esse papel.
+`Estudio.tsx` redireciona `papel === 'superadmin'` para `/admin` assim que a
+sessão carrega.

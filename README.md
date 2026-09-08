@@ -114,9 +114,9 @@ acima do preço, que parece exagerada e não é.
 | 1 | Setup + schema multi-tenant com RLS | pronto |
 | 2 | Motor de cartaz portado | pronto |
 | 3 | Auth + papéis | pronto (API + login no front) |
-| 4 | Cadastro público + trial | pronto (API; falta tela no front) |
-| 5 | Integração Asaas | pronto na API — ver DECISOES.md #19 para confirmar |
-| 6 | Painel superadmin | só a fatia de configuração do Asaas |
+| 4 | Cadastro público + trial | pronto, ponta a ponta |
+| 5 | Integração Asaas | pronto, ponta a ponta — ver DECISOES.md #19 para confirmar |
+| 6 | Painel superadmin | tenants/MRR/planos prontos; falta impersonar e central de ajuda |
 | 7–9 | Painel do tenant, ajuda, melhorias | não começados |
 
 ## Trial, bloqueio e cobrança (itens 4, 5, 6-fatia)
@@ -144,3 +144,22 @@ Fluxo real, sem período de carência:
 
 Credencial do Asaas fica cifrada no banco (AES-256-GCM), configurável pelo
 superadmin em vez de variável de ambiente — DECISOES.md #17.
+
+## Painel superadmin (item 6, parcial)
+
+`/admin` (protegido por papel `superadmin`, que é redirecionado para lá
+automaticamente ao logar — ele não tem tenant nem cartaz para editar):
+
+- **Lista de tenants** com status, plano, quantidade de lojas, MRR calculado
+  (`mensalidadeCentavos`, zero fora de `status='ativo'`) e próxima cobrança
+  (estimada a partir do último pagamento confirmado quando o Asaas ainda não
+  informou a data real).
+- **Métricas agregadas** — MRR total, contagem por status.
+- **Suspender/reativar manualmente** — o único caminho de mudança de status
+  feito por uma pessoa (`tenants_protege_status` já barra qualquer outro).
+  Mudar para `suspenso`/`cancelado` pede confirmação no navegador.
+- **Planos** — preço, limite de lojas e se aparece no cadastro público,
+  editáveis sem deploy (`GET`/`PATCH /admin/planos`).
+
+Faltam impersonar tenant (ver a tela como o cliente vê, para suporte) e a
+central de ajuda em vídeo — cada um com desenho próprio, ainda não iniciado.

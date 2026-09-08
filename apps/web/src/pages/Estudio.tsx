@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom';
 import { useSessao } from '../auth/AuthProvider';
 import { EditorCartaz } from '../features/cartaz/EditorCartaz';
 import { BloqueioAssinatura } from '../features/assinatura/BloqueioAssinatura';
@@ -10,6 +11,10 @@ const NOME_DO_PAPEL: Record<string, string> = {
 
 export function Estudio() {
   const { usuario, sair } = useSessao();
+
+  // Superadmin nao tem tenant nem cartaz para editar — o lugar dele e o
+  // painel, nao o estudio.
+  if (usuario?.papel === 'superadmin') return <Navigate to="/admin" replace />;
 
   return (
     <>
