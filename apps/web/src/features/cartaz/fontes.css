@@ -1,0 +1,29 @@
+/* =============================================================================
+   Fontes self-hosted do cartaz.
+
+   ATENCAO — LICENCA: estes tres arquivos sao o corte gratuito (SIL OFL) que a
+   TypeType libera da familia TT Masters. A familia COMPLETA e paga. Nao
+   substitua por arquivos da versao completa sem comprar a licenca.
+
+   Os .otf ainda NAO estao no repositorio — precisam ser copiados do MVP para
+   apps/web/public/fonts/. Enquanto nao estiverem, o navegador cai no fallback
+   (system-ui) e o cartaz continua renderizando, so que com outra fonte.
+   ============================================================================= */
+
+@font-face {
+  font-family: 'MastersBlack';
+  src: url('/fonts/masters-black.otf') format('opentype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MastersBirds';
+  src: url('/fonts/masters-birds.otf') format('opentype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MastersRoughThin';
+  src: url('/fonts/masters-rough-thin.otf') format('opentype');
+  font-display: swap;
+}

@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: rotulei-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_dev
+      POSTGRES_DB: rotulei
+    ports:
+      # 5433 no host: a 5432 ja esta ocupada por outro container nesta maquina.
+      - "5433:5432"
+    volumes:
+      - rotulei_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rotulei"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  rotulei_pgdata:

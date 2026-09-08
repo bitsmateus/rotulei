@@ -1,0 +1,115 @@
+/* =============================================================================
+   As poucas propriedades que PRECISAM mudar por tamanho de tela.
+
+   O cartaz em si usa style inline (portavel, imune a CSS global). Estas classes
+   existem so porque @media nao funciona em style inline — mesma solucao do MVP.
+   ============================================================================= */
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: start;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.editor-previa {
+  position: sticky;
+  top: 20px;
+}
+
+.editor-pares {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Nunca menos que 16px num campo: abaixo disso o Safari do iPhone da zoom
+   automatico ao focar. */
+.editor-campo input,
+.editor-campo textarea,
+.editor-campo select {
+  font-size: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font-family: inherit;
+}
+
+.editor-campo label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--suave);
+  margin-bottom: 5px;
+}
+
+.editor-campo {
+  margin-bottom: 12px;
+}
+
+/* Abaixo de ~44px o alvo de toque fica dificil de acertar. */
+.editor-cores {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.editor-cor {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 3px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.editor-cor[aria-pressed='true'] {
+  border-color: var(--texto);
+}
+
+.editor-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 9px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.editor-check input {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 900px) {
+  .editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Sem isto a previa "sumia" ao rolar numa tela estreita. */
+  .editor-previa {
+    position: static;
+    order: -1;
+  }
+
+  .editor-check input {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 420px) {
+  /* peso/unidade, preco/preco-antigo... colapsam para 1 coluna */
+  .editor-pares {
+    grid-template-columns: 1fr;
+  }
+}

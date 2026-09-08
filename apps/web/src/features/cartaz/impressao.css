@@ -1,0 +1,45 @@
+/* =============================================================================
+   Impressao A4 real — sem geracao de PDF no servidor.
+
+   O que sai na impressora e o MESMO elemento da previa, so que sem o
+   transform: scale(). Por isso a previa bate pixel a pixel com o papel.
+
+   "Salvar como PDF" da propria caixa de dialogo do navegador ja resolve quando
+   o cliente quer o arquivo em vez do papel — nao precisa de codigo nenhum.
+   ============================================================================= */
+
+/* Escondida na tela normal; so existe para a impressora. */
+.area-impressao {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  body > *:not(#root) {
+    display: none !important;
+  }
+
+  /* esconde formulario e previa */
+  .tela {
+    display: none !important;
+  }
+
+  .area-impressao {
+    display: block !important;
+  }
+
+  /* 1 cartaz = 1 folha */
+  .cartaz-a4 {
+    page-break-after: always;
+    /* na impressao o elemento vai no tamanho real, sem escala */
+    transform: none !important;
+  }
+
+  .cartaz-a4:last-child {
+    page-break-after: auto;
+  }
+}

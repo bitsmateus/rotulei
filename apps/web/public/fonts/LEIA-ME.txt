@@ -1,0 +1,22 @@
+Coloque aqui os arquivos de fonte do MVP do Mercado Nunes:
+
+  masters-black.otf
+  masters-birds.otf
+  masters-rough-thin.otf
+  LICENSE-masters.txt
+
+LICENCA — leia antes de substituir por outros arquivos:
+
+Estes tres sao o corte GRATUITO (SIL OFL 1.1) que a fundicao TypeType libera da
+familia TT Masters. A familia COMPLETA e paga (licenca comercial, um projeto =
+uma licenca) e NAO pode ser embutida aqui.
+
+O cartaz original do cliente, feito no Canva, usa a familia completa. "Masters
+Black" e a mais parecida com o visual grosso/redondo dele e por isso e a fonte
+padrao do Rotulei.
+
+Se um dia o cliente comprar a licenca completa, basta trocar os .otf e manter os
+mesmos @font-face de src/features/cartaz/fontes.css.
+
+Sem estes arquivos o cartaz continua funcionando — o navegador cai no fallback
+(system-ui) e a fonte fica diferente da do cliente.

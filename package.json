@@ -1,0 +1,32 @@
+{
+  "name": "rotulei",
+  "private": true,
+  "version": "0.1.0",
+  "description": "SaaS multi-tenant de geracao de placas de oferta para mercados",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d",
+    "db:bootstrap": "npm run db:bootstrap -w @rotulei/api",
+    "db:migrate": "npm run db:migrate -w @rotulei/api",
+    "db:seed": "npm run db:seed -w @rotulei/api",
+    "db:setup": "npm run db:bootstrap && npm run db:migrate && npm run db:seed",
+    "api:dev": "npm run dev -w @rotulei/api",
+    "test": "npm run test:api && npm run test:web",
+    "web:dev": "npm run dev -w @rotulei/web",
+    "test:api": "npm run test -w @rotulei/api",
+    "test:web": "npm run test -w @rotulei/web",
+    "build": "npm run build -w @rotulei/api && npm run build -w @rotulei/web"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "argon2@0.45.1": true
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "@rotulei/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "npm run build -w @rotulei/shared && nest build",
+    "start": "node dist/main.js",
+    "db:bootstrap": "tsx db/scripts/bootstrap.ts",
+    "db:migrate": "tsx db/scripts/migrate.ts up",
+    "db:migrate:down": "tsx db/scripts/migrate.ts down",
+    "db:seed": "tsx db/scripts/seed.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "pretest": "npm run build",
+    "predev": "npm run build -w @rotulei/shared"
+  },
+  "dependencies": {
+    "@nestjs/common": "^12.0.1",
+    "@nestjs/config": "^12.0.0",
+    "@nestjs/core": "^12.0.1",
+    "@nestjs/jwt": "^12.0.1",
+    "@nestjs/platform-express": "^12.0.1",
+    "@rotulei/shared": "*",
+    "argon2": "^0.45.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "kysely": "^0.29.5",
+    "pg": "^8.23.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "zod": "^4.5.4",
+    "tsx": "^4.23.13"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^12.0.0",
+    "@nestjs/schematics": "^12.0.0",
+    "@types/node": "^26.5.0",
+    "@types/pg": "^8.23.1",
+    "dotenv": "^17.4.2",
+    "node-pg-migrate": "^9.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  },
+  "type": "module"
+}

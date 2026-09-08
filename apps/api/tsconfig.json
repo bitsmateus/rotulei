@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "module": "node16",
+    "moduleResolution": "node16",
+    "target": "es2023",
+    "lib": ["es2023"],
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+
+    // NestJS depende destes dois para injecao de dependencia por tipo.
+    // Sem emitDecoratorMetadata os construtores chegam com undefined.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    "strict": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": false
+  },
+  "include": ["src/**/*", "db/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
