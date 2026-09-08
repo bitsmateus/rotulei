@@ -26,6 +26,9 @@ export interface TenantTable {
   status: ColumnType<StatusTenant, StatusTenant | undefined, StatusTenant>;
   plano_id: string;
   trial_termina_em: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  logo_data_url: string | null;
+  cor_primaria: string | null;
+  cor_secundaria: string | null;
   criado_em: Gerada;
   atualizado_em: Gerada;
 }

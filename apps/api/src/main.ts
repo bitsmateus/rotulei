@@ -25,6 +25,11 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableShutdownHooks();
 
+  // Default do Express e 100kb — pequeno demais para o logo em base64 (item
+  // 7, marca propria). O teto de verdade fica no DTO (MarcaDto); isto so
+  // evita que o body-parser rejeite antes da validacao rodar.
+  app.useBodyParser('json', { limit: '1mb' });
+
   await app.listen(env.PORT);
   new Logger('Bootstrap').log(`Rotulei API em http://localhost:${env.PORT}/api`);
 }

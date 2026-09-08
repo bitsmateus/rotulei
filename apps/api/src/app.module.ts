@@ -14,6 +14,9 @@ import { AsaasModule } from './modules/asaas/asaas.module.js';
 import { AssinaturaModule } from './modules/assinatura/assinatura.module.js';
 import { TrialModule } from './modules/trial/trial.module.js';
 import { SuperadminModule } from './modules/superadmin/superadmin.module.js';
+import { LojasModule } from './modules/lojas/lojas.module.js';
+import { UsuariosModule } from './modules/usuarios/usuarios.module.js';
+import { MarcaModule } from './modules/marca/marca.module.js';
 
 @Module({
   imports: [
@@ -29,6 +32,9 @@ import { SuperadminModule } from './modules/superadmin/superadmin.module.js';
     AssinaturaModule,
     TrialModule,
     SuperadminModule,
+    LojasModule,
+    UsuariosModule,
+    MarcaModule,
   ],
   providers: [
     // Ordem importa: o limite por IP roda ANTES da autenticacao, pra rejeitar

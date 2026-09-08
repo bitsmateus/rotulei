@@ -549,3 +549,81 @@ conhecida do AUDITORIA.md) e o superadmin não tem `tenantId`, deixar ele cair
 em `/` mostraria um editor de cartaz que não faz sentido pra esse papel.
 `Estudio.tsx` redireciona `papel === 'superadmin'` para `/admin` assim que a
 sessão carrega.
+
+# Item 7 — painel do tenant — 08/09/2026
+
+Lojas e usuários já tinham schema e RLS prontos desde a Fase 0 (migrations
+0004/0005/0007) — nenhuma migration nova para isso, só os módulos NestJS que
+faltavam. Marca própria é schema novo (migration 0014).
+
+## 31. Marca própria é logo em `tenants`, cor guardada mas ainda não aplicada no cartaz
+
+ESCOPO.md fala em "marca própria — logo e paleta aplicados automaticamente nos
+cartazes". Implementei os dois campos (`logo_data_url`, `cor_primaria`,
+`cor_secundaria` em `tenants`) e apliquei o **logo** de verdade — `CartazA4` já
+tinha a prop `logoUrl` desde o porte do motor, só ninguém alimentava ela;
+agora `Estudio.tsx` busca `GET /tenant/marca` e passa adiante.
+
+A **cor** eu guardo mas não apliquei ao motor. Os 6 temas de `TEMAS` são porte
+do MVP, validados na gôndola com o cliente (CLAUDE.md, regra 5) — aplicar uma
+paleta arbitrária do tenant significaria ou (a) mexer nos temas fixos, o que a
+regra proíbe, ou (b) inventar um 7º tema "dinâmico" calculado a partir de duas
+cores, o que é decisão de design (contraste, legibilidade impressa) que não é
+minha para tomar sozinho. Fica pendente, documentado na tela do painel
+("a cor ainda não é aplicada automaticamente").
+
+Por que não ficou em `lojas`: o texto do ESCOPO fala da marca no nível de quem
+"define a marca (logo/cores)" — o admin do tenant, não o gerente de uma loja
+específica. `lojas` também não tem hoje nenhum outro dado de identidade visual
+por loja.
+
+## 32. Logo é data URL no Postgres, não Supabase Storage nem MinIO
+
+Sem Supabase (já descartado) e sem MinIO configurado no EasyPanel (cogitado,
+nunca ficou necessário até agora — ver decisão #28), guardar o logo como
+`data:image/...;base64,...` direto na coluna evita subir infra nova para um
+arquivo que, na prática, é pequeno (é um logo de mercado, não uma foto). O DTO
+(`EditarMarcaDto`) limita a ~500KB de base64 e o `main.ts` sobe o limite do
+body JSON pra 1MB só pra essa rota não ser cortada pelo padrão de 100KB do
+Express. Se um dia o volume de tenants com logo grande justificar, migrar para
+object storage é uma troca de uma função (`obter`/`editar` do
+`MarcaService`) — o contrato da API (`logoDataUrl: string`) não muda, só o
+que tem dentro da string.
+
+## 33. Marca própria é recurso de plano — Rede/Enterprise, não Início
+
+A tabela de preços do ESCOPO.md já distinguia isso ("Início: ... templates
+padrão + sazonais" vs. "Rede: tudo do Início + painel multi-loja + **marca
+própria**"), e o seed (`seed.ts`) já guardava `recursos.marca_propria`
+por plano desde a Fase 0 — só ninguém a checava ainda. Adicionei
+`planoTemMarcaPropria()` em `@rotulei/shared` e o `MarcaService.editar()`
+recusa com 400 se o plano do tenant não incluir o recurso. A LEITURA
+(`GET /tenant/marca`) não é bloqueada por plano — um tenant que fez downgrade
+continua vendo (e o cartaz continua usando) o logo que já tinha configurado;
+só não consegue trocar.
+
+## 34. Um admin não mexe na própria conta pelo CRUD de usuários
+
+`UsuariosService` recusa (400) um admin remover a própria conta, desativar a
+si mesmo, ou tirar o próprio papel de admin — nos três casos, com uma
+mensagem que diz pra pedir a outro admin. Sem isso, o próprio admin
+conseguiria se trancar para fora do painel de cobrança do próprio tenant sem
+querer (um clique errado no `<select>` de papel). Como reforço, o service
+também impede que a ÚLTIMA conta admin ativa do tenant seja removida,
+desativada ou rebaixada por OUTRO admin — na prática essa segunda checagem só
+importa numa janela estreita (o ator foi desativado por um terceiro admin
+segundos atrás e seu access token, válido por `ACCESS_TOKEN_MINUTOS`, ainda
+não expirou), porque o guard `@Papeis('admin')` já garante que quem está
+chamando a rota é, pelos claims do próprio JWT, um admin — então normalmente
+ele já conta como "outro admin ativo" ao mexer em alguém diferente de si.
+
+## 35. Admin cadastra operador com senha na hora, não convite por e-mail
+
+`DefinirSenhaDto` (`auth.dto.ts`) já existia órfã — provavelmente pensada para
+um fluxo de convite ("admin cria usuário sem senha, ele define depois por
+e-mail"). Não construí isso: o projeto não tem serviço de e-mail nenhum ainda
+(nem para o cadastro público, nem para recuperação de senha), então um convite
+ficaria pela metade. `CriarUsuarioDto.senha` é obrigatório — o admin decide a
+senha do operador na hora do cadastro, igual ao MVP original resolveria isso.
+Convite por e-mail fica para quando o projeto tiver um serviço de e-mail por
+outro motivo (ex.: recuperação de senha, que também não existe ainda).

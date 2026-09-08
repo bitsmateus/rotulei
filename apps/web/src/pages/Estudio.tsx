@@ -1,7 +1,9 @@
-import { Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, Navigate } from 'react-router-dom';
 import { useSessao } from '../auth/AuthProvider';
 import { EditorCartaz } from '../features/cartaz/EditorCartaz';
 import { BloqueioAssinatura } from '../features/assinatura/BloqueioAssinatura';
+import { obterMarca } from '../lib/api';
 
 const NOME_DO_PAPEL: Record<string, string> = {
   superadmin: 'Superadmin',
@@ -11,6 +13,17 @@ const NOME_DO_PAPEL: Record<string, string> = {
 
 export function Estudio() {
   const { usuario, sair } = useSessao();
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!usuario || usuario.papel === 'superadmin' || usuario.bloqueado) return;
+    obterMarca()
+      .then((m) => setLogoUrl(m.logoDataUrl))
+      .catch(() => {
+        // Sem marca configurada (ou plano sem o recurso) nao e erro — o
+        // cartaz so nao mostra logo, como se `mostrarLogo` estivesse desligado.
+      });
+  }, [usuario]);
 
   // Superadmin nao tem tenant nem cartaz para editar — o lugar dele e o
   // painel, nao o estudio.
@@ -33,6 +46,7 @@ export function Estudio() {
       >
         <strong style={{ fontSize: 17 }}>Rotulei</strong>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {usuario?.papel === 'admin' && !usuario.bloqueado && <Link to="/painel">Painel do mercado</Link>}
           <span style={{ color: 'var(--suave)', fontSize: 13 }}>
             {NOME_DO_PAPEL[usuario?.papel ?? ''] ?? usuario?.papel}
           </span>
@@ -45,7 +59,11 @@ export function Estudio() {
       {usuario?.bloqueado ? (
         <BloqueioAssinatura usuario={usuario} />
       ) : usuario ? (
-        <EditorCartaz key={`${usuario.tenantId}:${usuario.id}`} escopoFila={`${usuario.tenantId}:${usuario.id}`} />
+        <EditorCartaz
+          key={`${usuario.tenantId}:${usuario.id}`}
+          escopoFila={`${usuario.tenantId}:${usuario.id}`}
+          logoUrl={logoUrl}
+        />
       ) : null}
     </>
   );

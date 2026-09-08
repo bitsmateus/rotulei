@@ -56,6 +56,10 @@ export interface Tenant {
   status: StatusTenant;
   planoId: string;
   trialTerminaEm: Date | null;
+  /** Marca propria (item 7) — data URL, null se o tenant nao configurou logo. */
+  logoDataUrl: string | null;
+  corPrimaria: string | null;
+  corSecundaria: string | null;
   criadoEm: Date;
   atualizadoEm: Date;
 }

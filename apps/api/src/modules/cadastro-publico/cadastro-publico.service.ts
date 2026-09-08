@@ -7,20 +7,9 @@ import {
   validarTelefone,
 } from '@rotulei/shared';
 import { ContextoDbService } from '../../database/contexto-db.service.js';
+import { ehViolacaoDeUnicidade } from '../../common/db/erros-postgres.js';
 import { AuthService } from '../auth/auth.service.js';
 import type { CadastroPublicoDto } from './cadastro-publico.dto.js';
-
-/** Erro do Postgres para violacao de unicidade (`unique_violation`). */
-const CODIGO_UNIQUE_VIOLATION = '23505';
-
-function ehViolacaoDeUnicidade(erro: unknown): erro is { code: string; constraint?: string } {
-  return (
-    typeof erro === 'object' &&
-    erro !== null &&
-    'code' in erro &&
-    (erro as { code: unknown }).code === CODIGO_UNIQUE_VIOLATION
-  );
-}
 
 /**
  * Slug a partir do nome do mercado: minusculas, sem acento, so [a-z0-9-].

@@ -25,3 +25,13 @@ export function mensalidadeCentavos(plano: Plano, qtdLojas: number): number {
     ? plano.precoMensalCentavos * Math.max(qtdLojas, 1)
     : plano.precoMensalCentavos;
 }
+
+/**
+ * "Marca propria" (logo + paleta) e recurso do plano Rede/Enterprise, nao do
+ * Inicio — ESCOPO.md, tabela de planos. `recursos` e jsonb livre; o valor so e
+ * confiavel quando `true` estrito (evita que um valor truthy qualquer, tipo a
+ * string "false", libere o recurso por acidente).
+ */
+export function planoTemMarcaPropria(plano: Pick<Plano, 'recursos'>): boolean {
+  return plano.recursos.marca_propria === true;
+}

@@ -306,3 +306,106 @@ export async function editarPlano(planoId: string, dados: EdicaoDePlano): Promis
     body: JSON.stringify(dados),
   });
 }
+
+// ── painel do tenant (item 7) — lojas, usuários, marca própria ─────────────────
+
+export interface Loja {
+  id: string;
+  tenantId: string;
+  nome: string;
+  endereco: string | null;
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export async function listarLojas(): Promise<Loja[]> {
+  return api<Loja[]>('/tenant/lojas');
+}
+
+export async function criarLoja(dados: { nome: string; endereco?: string | null }): Promise<Loja> {
+  return api<Loja>('/tenant/lojas', { method: 'POST', body: JSON.stringify(dados) });
+}
+
+export async function editarLoja(
+  id: string,
+  dados: { nome?: string; endereco?: string | null },
+): Promise<Loja> {
+  return api<Loja>(`/tenant/lojas/${id}`, { method: 'PATCH', body: JSON.stringify(dados) });
+}
+
+export async function removerLoja(id: string): Promise<void> {
+  await api<void>(`/tenant/lojas/${id}`, { method: 'DELETE' });
+}
+
+export interface UsuarioDoTenant {
+  id: string;
+  tenantId: string | null;
+  lojaId: string | null;
+  nome: string;
+  email: string;
+  papel: 'admin' | 'operador';
+  ativo: boolean;
+  ultimoLoginEm: string | null;
+  criadoEm: string;
+}
+
+export async function listarUsuariosDoTenant(): Promise<UsuarioDoTenant[]> {
+  return api<UsuarioDoTenant[]>('/tenant/usuarios');
+}
+
+export interface DadosNovoUsuario {
+  nome: string;
+  email: string;
+  senha: string;
+  papel: 'admin' | 'operador';
+  lojaId?: string | null;
+}
+
+export async function criarUsuarioDoTenant(dados: DadosNovoUsuario): Promise<UsuarioDoTenant> {
+  return api<UsuarioDoTenant>('/tenant/usuarios', { method: 'POST', body: JSON.stringify(dados) });
+}
+
+export interface EdicaoDeUsuario {
+  nome?: string;
+  papel?: 'admin' | 'operador';
+  lojaId?: string | null;
+  ativo?: boolean;
+}
+
+export async function editarUsuarioDoTenant(id: string, dados: EdicaoDeUsuario): Promise<UsuarioDoTenant> {
+  return api<UsuarioDoTenant>(`/tenant/usuarios/${id}`, { method: 'PATCH', body: JSON.stringify(dados) });
+}
+
+export async function removerUsuarioDoTenant(id: string): Promise<void> {
+  await api<void>(`/tenant/usuarios/${id}`, { method: 'DELETE' });
+}
+
+export interface Marca {
+  logoDataUrl: string | null;
+  corPrimaria: string | null;
+  corSecundaria: string | null;
+  marcaPropriaDisponivel: boolean;
+}
+
+/** Leitura liberada a qualquer papel do tenant — o operador também precisa do logo no cartaz. */
+export async function obterMarca(): Promise<Marca> {
+  return api<Marca>('/tenant/marca');
+}
+
+export async function editarMarca(dados: {
+  logoDataUrl?: string | null;
+  corPrimaria?: string | null;
+  corSecundaria?: string | null;
+}): Promise<Marca> {
+  return api<Marca>('/tenant/marca', { method: 'PUT', body: JSON.stringify(dados) });
+}
+
+/** Converte o arquivo escolhido pelo usuário direto em data URL — sem multipart, sem storage novo. */
+export function arquivoParaDataUrl(arquivo: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const leitor = new FileReader();
+    leitor.onload = () => resolve(leitor.result as string);
+    leitor.onerror = () => reject(new Error('Não foi possível ler o arquivo.'));
+    leitor.readAsDataURL(arquivo);
+  });
+}

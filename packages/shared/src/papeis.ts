@@ -17,3 +17,11 @@ export const PAPEIS_GLOBAIS: readonly PapelContexto[] = ['superadmin', 'sistema'
 export function ehPapelUsuario(v: unknown): v is PapelUsuario {
   return typeof v === 'string' && (PAPEIS_USUARIO as readonly string[]).includes(v);
 }
+
+/**
+ * Papeis que o ADMIN de um tenant pode atribuir ao cadastrar/editar um
+ * usuario (item 7, painel do tenant). `superadmin` fica de fora de proposito:
+ * nao existe like o tenant "promover" alguem a acesso cross-tenant.
+ */
+export const PAPEIS_ATRIBUIVEIS_PELO_ADMIN = ['admin', 'operador'] as const;
+

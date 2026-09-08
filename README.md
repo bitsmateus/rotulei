@@ -117,7 +117,8 @@ acima do preço, que parece exagerada e não é.
 | 4 | Cadastro público + trial | pronto, ponta a ponta |
 | 5 | Integração Asaas | pronto, ponta a ponta — ver DECISOES.md #19 para confirmar |
 | 6 | Painel superadmin | tenants/MRR/planos prontos; falta impersonar e central de ajuda |
-| 7–9 | Painel do tenant, ajuda, melhorias | não começados |
+| 7 | Painel do tenant | lojas, usuários e logo prontos; cor da marca guardada mas ainda não aplicada no cartaz |
+| 8–9 | Central de ajuda, melhorias | não começados |
 
 ## Trial, bloqueio e cobrança (itens 4, 5, 6-fatia)
 
@@ -163,3 +164,23 @@ automaticamente ao logar — ele não tem tenant nem cartaz para editar):
 
 Faltam impersonar tenant (ver a tela como o cliente vê, para suporte) e a
 central de ajuda em vídeo — cada um com desenho próprio, ainda não iniciado.
+
+## Painel do tenant (item 7)
+
+`/painel` (protegido por papel `admin`; há um link "Painel do mercado" no
+cabeçalho do estúdio, visível só para o admin):
+
+- **Lojas** — cadastro, edição e remoção, respeitando o limite de lojas do
+  plano contratado (`planos.limite_lojas`).
+- **Usuários** — cadastro de admins e operadores, vínculo do operador a uma
+  loja, ativar/desativar, trocar papel. Um admin não consegue remover,
+  desativar ou tirar o próprio papel de admin por aqui (DECISOES.md #34) —
+  evita se trancar para fora sem querer.
+- **Marca própria** — logo (upload direto, vira `data:image/...` no banco,
+  sem storage novo) já aparece automaticamente no cartaz gerado. Cor primária
+  e secundária ficam guardadas mas ainda não mudam o visual do cartaz — ver
+  DECISOES.md #31. É recurso do plano Rede/Enterprise (DECISOES.md #33): o
+  plano Início vê a tela, mas não consegue salvar.
+
+Biblioteca de layouts salvos por tenant (o resto do item 7 no ESCOPO.md) e
+upgrade/downgrade de plano continuam fora desta fatia.
