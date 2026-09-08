@@ -9,6 +9,9 @@ export interface Usuario {
   nome: string;
   email: string;
   papel: PapelUsuario;
+  /** So preenchido para quem passou pelo cadastro publico. */
+  cpf: string | null;
+  telefone: string | null;
   ativo: boolean;
   ultimoLoginEm: Date | null;
   criadoEm: Date;

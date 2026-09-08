@@ -417,3 +417,91 @@ cadastro publicamente.**
 Depois do deploy, cadastre `https://{seu-dominio}/api/webhooks/asaas` no
 painel do Asaas (Configurações → Integrações → Webhooks), com o mesmo
 `webhookToken` que você colocar na tela de configuração do superadmin.
+
+---
+
+# Rate limiting, "1x por pessoa" e validação de documentos — 08/09/2026
+
+Você confirmou o checkout hospedado (decisão #19) e pediu três coisas: rate
+limiting no cadastro, limite de uma conta por pessoa, e validação real de
+CNPJ/CPF/e-mail/telefone. 193 testes no total agora (159 API + 34 web).
+
+## 24. "1x por pessoa" = CPF único, não e-mail nem CNPJ
+
+Você não disse *como* identificar "a pessoa" — decidi que é o **CPF do
+responsável pelo cadastro**, não da empresa (CNPJ) nem do e-mail.
+
+**Por quê:** CNPJ e e-mail são triviais de multiplicar — abrir um CNPJ novo
+como MEI custa uma tarde, e um e-mail novo custa um clique. CPF é o único dos
+identificadores do formulário que resiste a alguém reiniciar o trial por
+conta própria. Por isso o cadastro público passou a **pedir CPF e telefone**
+do responsável (campos novos, não previstos no ESCOPO.md original), e ambos
+ganharam índice único em `usuarios` (parcial — só entre quem preencheu, então
+operadores e o superadmin não são afetados).
+
+**O que isso significa na prática:** o mesmo CPF não abre um segundo trial
+mesmo trocando CNPJ e e-mail. A mensagem de erro (409) diz explicitamente
+"CPF já usado", para não parecer um bug quando a pessoa tentar de novo com
+dados aparentemente diferentes.
+
+**O que isso NÃO cobre:** duas pessoas da mesma família/sócios com CPFs
+diferentes continuam conseguindo abrir dois trials para o mesmo mercado — a
+regra impede a MESMA pessoa de repetir, não impede uma sociedade de "dividir"
+o cadastro entre dois CPFs. Fechar essa brecha exigiria cruzar dados que o
+Rotulei não tem acesso (Receita Federal), então não tentei.
+
+## 25. Validação de CNPJ e CPF é o dígito verificador de verdade, não só a contagem
+
+Antes desta rodada, o cadastro só conferia "tem 14 dígitos" para CNPJ — um
+CNPJ **inventado** (`11222333000199`, por exemplo) passava. Agora
+`packages/shared/src/documentos.ts` implementa o módulo 11 de verdade para
+CPF e CNPJ, e uma validação de DDD + dígito 9 do celular para telefone. Ficou
+no pacote compartilhado (não só na API) porque o dia em que existir um
+formulário de cadastro no frontend, a mesma validação deve rodar lá também,
+sem duplicar a lógica.
+
+**Achado no processo:** ao escrever os geradores de CPF/CNPJ válidos para os
+testes, minha primeira fórmula (`(sufixo + i*7) % 10`) tinha período 10 —
+sufixos que diferem por exatamente 10 geravam o mesmo documento. Pegou 7
+testes falhando com 409 em vez de 201. Troquei por um gerador
+pseudoaleatório (LCG) com período de 233280, bem acima do intervalo de
+sufixos usado nos testes. Fica registrado porque é o tipo de bug que some
+sozinho se o próximo a mexer aumentar o número de testes sem perceber o
+padrão.
+
+## 26. Rate limiting é código próprio, não `@nestjs/throttler`
+
+Tentei instalar o pacote padrão do Nest para isso e o `npm install` recusou:
+a versão publicada do `@nestjs/throttler` (6.5.0) ainda não declara suporte
+de peer dependency para o Nest 12, que este projeto já usa. As saídas eram
+forçar com `--legacy-peer-deps` numa peça de segurança, ou esperar o pacote
+atualizar. Preferi escrever `LimitePorIpGuard` (30 linhas, em memória,
+testado) — para o volume de uma rota pública de cadastro, não precisava da
+flexibilidade do pacote de terceiro.
+
+**Limitação registrada no próprio código:** o contador é por processo, não
+compartilhado entre réplicas. Com uma instância só (o caso do EasyPanel hoje),
+não importa. Se o Rotulei escalar para múltiplas réplicas da API, o limite
+efetivo vira `limite × réplicas` — nesse dia, trocar por um contador no
+Postgres ou Redis.
+
+**Limite escolhido:** 5 tentativas por hora por IP no `POST /public/cadastro`
+— generoso o bastante para alguém corrigir um typo de CPF/CNPJ, apertado o
+bastante para travar um script. Testado de ponta a ponta contra o servidor
+rodando de verdade (não só a unidade): 5 tentativas passam, a 6ª devolve 429
+com o tempo de espera.
+
+## 27. Achado um bug real do Zod: `z.coerce.boolean()` não faz o que parece
+
+Ao criar a flag `DESABILITAR_LIMITES` (que existe só para a suíte de testes
+desligar o rate limit, já que todos os testes batem do mesmo IP), usei
+`z.coerce.boolean().default(false)` — e o próprio teste do rate limit
+começou a falhar, porque a flag vinha `true` mesmo com `DESABILITAR_LIMITES=
+false` no `.env`.
+
+**A causa:** `z.coerce.boolean()` faz `Boolean(valor)` por baixo, e em
+JavaScript `Boolean("false")` é `true` — qualquer string não vazia é
+verdadeira. Troquei por `z.string().optional().transform(v => v === 'true')`,
+que compara o texto de verdade. **Vale conferir se esse padrão apareceu em
+outro lugar do projeto** — busquei e não achei mais nenhum `z.coerce.boolean()`
+no código hoje, mas é o tipo de armadilha fácil de reintroduzir sem querer.

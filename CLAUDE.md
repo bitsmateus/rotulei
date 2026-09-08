@@ -49,6 +49,15 @@ exagerada e não é — foi medida no pior caso. `motor.spec.ts` trava cada núm
 - **TypeScript fica na 6** até a 7.1 devolver a API do compilador.
 - **`npm test` compila antes.** Os testes rodam contra `dist/`, não contra o
   fonte, pelo mesmo motivo do item acima.
+- **Nunca `z.coerce.boolean()` para var de ambiente.** Ele faz `Boolean(string)`
+  por baixo — `Boolean("false")` é `true` em JS. Use
+  `z.string().optional().transform(v => v === 'true')`. Já causou um bug real
+  (`DESABILITAR_LIMITES=false` ficava `true`) — ver `config/env.ts`.
+- **`vitest` seta `NODE_ENV=test` sozinho, em qualquer worker.** Não use
+  `NODE_ENV` para diferenciar "isto é a suíte de e2e" de "isto é um teste
+  unitário rodando dentro do vitest" — os dois têm o mesmo valor. Para algo que
+  só a suíte de e2e (o processo que `test/servidor.ts` sobe) deve fazer, crie
+  uma flag própria, como `DESABILITAR_LIMITES`.
 - Portas locais: API `3333`, Postgres `5433`, Vite `5173`.
 
 ## Nomes

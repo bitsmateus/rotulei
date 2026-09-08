@@ -47,6 +47,9 @@ export interface UsuarioTable {
   email: string;
   papel: PapelUsuario;
   senha_hash: ColumnType<string | null, string | null | undefined, string | null>;
+  /** So preenchido por quem passou pelo cadastro publico — ver migration 0013. */
+  cpf: ColumnType<string | null, string | null | undefined, string | null>;
+  telefone: ColumnType<string | null, string | null | undefined, string | null>;
   ativo: Generated<boolean>;
   ultimo_login_em: ColumnType<Date | null, Date | string | null, Date | string | null>;
   criado_em: Gerada;

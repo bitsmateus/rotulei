@@ -13,6 +13,7 @@ import { resolve } from 'node:path';
 import type { Pool } from 'pg';
 import { criarKysely, criarPool } from '../src/database/pool';
 import { ContextoDbService } from '../src/database/contexto-db.service';
+import { cnpjValido, cpfValido, telefoneValido } from './documentos-teste';
 
 config({ path: resolve(process.cwd(), '../../.env'), quiet: true });
 
@@ -34,8 +35,11 @@ let pool: Pool;
 let db: ContextoDbService;
 
 const marca = `bl${Date.now().toString(36)}`;
+const semente = Date.now() % 1_000_000;
 const email = `bloqueio.${marca}@teste.com`;
-const cnpj = Date.now().toString().slice(-13).padStart(14, '6');
+const cnpj = cnpjValido(semente);
+const cpf = cpfValido(semente);
+const telefone = telefoneValido(semente);
 
 let tenantId: string;
 let accessToken: string;
@@ -49,6 +53,8 @@ beforeAll(async () => {
     nomeMercado: `Mercado Bloqueio ${marca}`,
     cnpj,
     nomeAdmin: 'Admin Bloqueio',
+    cpf,
+    telefone,
     email,
     senha: SENHA,
     planoCodigo: 'inicio',

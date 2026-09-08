@@ -165,5 +165,9 @@ no log de "token não confere".
 - [ ] Fontes `.otf` presentes em `apps/web/public/fonts/` (ver DECISOES.md)
 - [ ] Asaas configurado com `conexaoOk: true` e ambiente `production`
 - [ ] Webhook cadastrado no painel do Asaas apontando para `/api/webhooks/asaas`
-- [ ] Rate limiting no `POST /public/cadastro` antes de divulgar a URL (ver
-      DECISOES.md — pendência aberta, não implementado)
+- [ ] `DESABILITAR_LIMITES` **não** está nas variáveis do serviço `api` (só a
+      suíte de testes deve setar isso — em produção desliga o rate limiting
+      do cadastro público)
+- [ ] `app.set('trust proxy', 1)` depende do proxy na frente da API não deixar
+      o cliente forjar `X-Forwarded-For` — confira que o Traefik do EasyPanel
+      sobrescreve esse header, não repassa o que o visitante mandou

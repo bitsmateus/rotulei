@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from './database/database.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { AuthGuard } from './common/guards/auth.guard.js';
+import { LimitePorIpGuard } from './common/guards/limite-por-ip.guard.js';
 import { SaudeModule } from './modules/saude/saude.module.js';
 import { PlanosModule } from './modules/planos/planos.module.js';
 import { CartazesModule } from './modules/cartazes/cartazes.module.js';
@@ -28,6 +29,10 @@ import { TrialModule } from './modules/trial/trial.module.js';
     TrialModule,
   ],
   providers: [
+    // Ordem importa: o limite por IP roda ANTES da autenticacao, pra rejeitar
+    // trafego abusivo sem gastar verificacao de JWT nem ida ao banco. E um
+    // no-op para toda rota sem @LimitarPorIp() — hoje, so o cadastro publico.
+    { provide: APP_GUARD, useClass: LimitePorIpGuard },
     // Guard GLOBAL: toda rota nasce protegida. Para abrir uma, escreva
     // @Publico() nela — o contrario (proteger uma a uma) esquece rota.
     { provide: APP_GUARD, useClass: AuthGuard },

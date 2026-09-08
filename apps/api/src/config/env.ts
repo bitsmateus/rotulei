@@ -39,6 +39,25 @@ const esquema = z.object({
   CONFIG_SECRET: z.string().min(32, 'use ao menos 32 caracteres'),
   /** Preenchida so durante uma rotacao de CONFIG_SECRET; depois, remova. */
   CONFIG_SECRET_OLD: z.string().min(32).optional(),
+
+  /**
+   * So para test/servidor.ts: desliga o LimitePorIpGuard, porque a suite de
+   * e2e bate dezenas de vezes no mesmo endpoint a partir do mesmo IP.
+   *
+   * Deliberadamente NAO amarrado a NODE_ENV=test — o vitest seta essa
+   * variavel sozinho em qualquer worker, inclusive nos testes UNITARIOS do
+   * proprio guard, que precisam do limite LIGADO pra testar a logica de
+   * verdade. Uma flag propria tambem fica mais facil de flagrar numa
+   * revisao de variaveis de ambiente antes de subir pra producao.
+   */
+  // NUNCA `z.coerce.boolean()` aqui: ele usa `Boolean(string)` por baixo, e
+  // `Boolean("false")` e `true` — qualquer string nao-vazia vira `true`.
+  // Isso teria desligado o rate limit permanentemente em qualquer ambiente
+  // que definisse a variavel, mesmo como "false".
+  DESABILITAR_LIMITES: z
+    .string()
+    .optional()
+    .transform((v) => v === 'true'),
 });
 
 export type Env = z.infer<typeof esquema>;

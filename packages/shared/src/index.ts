@@ -1,3 +1,4 @@
+export * from './documentos.js';
 export * from './assinatura.js';
 export * from './cartaz.js';
 export * from './papeis.js';

@@ -32,7 +32,14 @@ export async function setup() {
 
   servidor = spawn(process.execPath, [resolve(raiz, 'dist/main.js')], {
     cwd: raiz,
-    env: { ...process.env, PORT: String(PORTA), NODE_ENV: 'test' },
+    env: {
+      ...process.env,
+      PORT: String(PORTA),
+      NODE_ENV: 'test',
+      // A suite bate dezenas de vezes no cadastro publico a partir do mesmo
+      // IP; sem isto, o proprio limite por IP derrubaria os testes.
+      DESABILITAR_LIMITES: 'true',
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 

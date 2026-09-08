@@ -1,5 +1,11 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { DIAS_DE_TRIAL } from '@rotulei/shared';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  DIAS_DE_TRIAL,
+  apenasDigitos,
+  validarCnpj,
+  validarCpf,
+  validarTelefone,
+} from '@rotulei/shared';
 import { ContextoDbService } from '../../database/contexto-db.service.js';
 import { AuthService } from '../auth/auth.service.js';
 import type { CadastroPublicoDto } from './cadastro-publico.dto.js';
@@ -14,10 +20,6 @@ function ehViolacaoDeUnicidade(erro: unknown): erro is { code: string; constrain
     'code' in erro &&
     (erro as { code: unknown }).code === CODIGO_UNIQUE_VIOLATION
   );
-}
-
-function normalizarCnpj(cnpj: string): string {
-  return cnpj.replace(/\D/g, '');
 }
 
 /**
@@ -55,8 +57,17 @@ export class CadastroPublicoService {
    * existe contexto de tenant ainda quando o tenant esta sendo criado.
    */
   async cadastrar(dto: CadastroPublicoDto) {
-    const cnpj = normalizarCnpj(dto.cnpj);
+    const cnpj = apenasDigitos(dto.cnpj);
+    const cpf = apenasDigitos(dto.cpf);
+    const telefone = apenasDigitos(dto.telefone);
     const email = dto.email.trim().toLowerCase();
+
+    // O DTO so confere FORMATO (contagem de digitos); o digito verificador de
+    // verdade (modulo 11) e conferido aqui, contra CPF/CNPJ forjados que
+    // passariam num regex mas nao existem de verdade.
+    if (!validarCnpj(cnpj)) throw new BadRequestException('CNPJ invalido.');
+    if (!validarCpf(cpf)) throw new BadRequestException('CPF invalido.');
+    if (!validarTelefone(telefone)) throw new BadRequestException('Telefone invalido.');
 
     const plano = await this.db.comoAnonimo((trx) =>
       trx
@@ -99,6 +110,8 @@ export class CadastroPublicoService {
               loja_id: null,
               nome: dto.nomeAdmin.trim(),
               email,
+              cpf,
+              telefone,
               papel: 'admin',
               senha_hash: senhaHash,
             })
@@ -120,6 +133,14 @@ export class CadastroPublicoService {
         }
         if (erro.constraint === 'usuarios_email_uk') {
           throw new ConflictException('Ja existe uma conta com este e-mail.');
+        }
+        if (erro.constraint === 'usuarios_cpf_uk') {
+          // E a regra "um trial por pessoa": este CPF ja abriu uma conta,
+          // mesmo que com outro e-mail ou outro CNPJ.
+          throw new ConflictException('Ja existe uma conta cadastrada com este CPF.');
+        }
+        if (erro.constraint === 'usuarios_telefone_uk') {
+          throw new ConflictException('Ja existe uma conta cadastrada com este telefone.');
         }
         throw erro;
       }

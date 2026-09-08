@@ -124,7 +124,12 @@ acima do preço, que parece exagerada e não é.
 Fluxo real, sem período de carência:
 
 1. **Cadastro público** (`POST /public/cadastro`) cria o tenant em `trial`,
-   sem pedir cartão, e já devolve os tokens — o admin entra direto.
+   sem pedir cartão, e já devolve os tokens — o admin entra direto. Pede
+   também CPF e telefone do responsável: são a base da regra **um trial por
+   pessoa** (`usuarios_cpf_uk` / `usuarios_telefone_uk`, únicos independente
+   de CNPJ ou e-mail). CNPJ e CPF passam por dígito verificador de verdade
+   (`packages/shared/src/documentos.ts`), não só contagem de dígitos. A rota
+   tem limite de 5 tentativas/hora por IP (`LimitePorIpGuard`).
 2. **`TrialService`** roda todo dia (e também ao subir o container) e vira
    `inadimplente` todo tenant em `trial` cujo prazo passou.
 3. **`inadimplente` bloqueia o produto, não o login.** O JWT carrega
