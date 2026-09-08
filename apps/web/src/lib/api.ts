@@ -90,6 +90,13 @@ async function renovar(): Promise<boolean> {
   return true;
 }
 
+function renovarUmaVez(): Promise<boolean> {
+  renovacaoEmAndamento ??= renovar().finally(() => {
+    renovacaoEmAndamento = null;
+  });
+  return renovacaoEmAndamento;
+}
+
 /**
  * Faz a chamada; se voltar 401, tenta renovar UMA vez e repete.
  *
@@ -102,11 +109,7 @@ export async function api<T>(caminho: string, opcoes: RequestInit = {}): Promise
   let resposta = await bruto(caminho, opcoes);
 
   if (resposta.status === 401 && lerRefresh()) {
-    renovacaoEmAndamento ??= renovar().finally(() => {
-      renovacaoEmAndamento = null;
-    });
-
-    if (await renovacaoEmAndamento) {
+    if (await renovarUmaVez()) {
       resposta = await bruto(caminho, opcoes);
     }
   }
@@ -132,6 +135,7 @@ export interface UsuarioDaSessao {
   tenantId: string | null;
   lojaId: string | null;
   papel: 'superadmin' | 'admin' | 'operador';
+  bloqueado: boolean;
 }
 
 export async function entrar(email: string, senha: string): Promise<UsuarioDaSessao> {
@@ -144,6 +148,33 @@ export async function entrar(email: string, senha: string): Promise<UsuarioDaSes
   const corpo = await r.json().catch(() => null);
   if (!r.ok) {
     throw new ErroDaApi(r.status, corpo?.message ?? 'E-mail ou senha inválidos.');
+  }
+
+  guardarSessao(corpo);
+  return api<UsuarioDaSessao>('/auth/eu');
+}
+
+export interface DadosCadastro {
+  nomeMercado: string;
+  cnpj: string;
+  nomeAdmin: string;
+  cpf: string;
+  telefone: string;
+  email: string;
+  senha: string;
+  planoCodigo: string;
+}
+
+export async function cadastrar(dados: DadosCadastro): Promise<UsuarioDaSessao> {
+  const r = await fetch(`${BASE}/public/cadastro`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dados),
+  });
+
+  const corpo = await r.json().catch(() => null);
+  if (!r.ok) {
+    throw new ErroDaApi(r.status, corpo?.message ?? 'Não foi possível concluir o cadastro.');
   }
 
   guardarSessao(corpo);
@@ -167,6 +198,46 @@ export async function sair(): Promise<void> {
 /** Reidrata a sessão ao abrir a página: só há refresh token, o access morreu. */
 export async function recuperarSessao(): Promise<UsuarioDaSessao | null> {
   if (!lerRefresh()) return null;
-  if (!(await renovar())) return null;
+  if (!(await renovarUmaVez())) return null;
   return api<UsuarioDaSessao>('/auth/eu').catch(() => null);
+}
+
+// ── planos e cobrança ────────────────────────────────────────────────────────
+
+export interface Plano {
+  id: string;
+  codigo: string;
+  nome: string;
+  precoMensalCentavos: number;
+  precoAnualCentavos: number | null;
+  precoPorLoja: boolean;
+  limiteLojas: number | null;
+  ativo: boolean;
+}
+
+/** Catálogo público — alimenta o select de plano na tela de cadastro. */
+export async function listarPlanos(): Promise<Plano[]> {
+  const r = await fetch(`${BASE}/planos`);
+  if (!r.ok) throw new ErroDaApi(r.status, 'Não foi possível carregar os planos.');
+  return r.json();
+}
+
+export interface StatusAssinatura {
+  statusTenant: string;
+  assinatura: { status: string } | null;
+  ultimoPagamento: { status: string; metodo: string | null } | null;
+}
+
+/** Só o admin acessa (ver AssinaturaController) — operador não lida com cobrança. */
+export async function obterStatusAssinatura(): Promise<StatusAssinatura> {
+  return api<StatusAssinatura>('/tenant/assinatura');
+}
+
+/**
+ * Abre a cobrança no Asaas e devolve o link de checkout hospedado — o Rotulei
+ * nunca vê número de cartão (DECISOES.md #19). Quem chama deve redirecionar
+ * a própria aba para `checkoutUrl`.
+ */
+export async function iniciarCheckout(): Promise<{ checkoutUrl: string }> {
+  return api<{ checkoutUrl: string }>('/tenant/assinatura/checkout', { method: 'POST' });
 }

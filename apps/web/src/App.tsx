@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthProvider';
 import { RotaProtegida } from './auth/RotaProtegida';
 import { Entrar } from './pages/Entrar';
+import { Cadastro } from './pages/Cadastro';
 import { Estudio } from './pages/Estudio';
 
 export function App() {
@@ -10,6 +11,7 @@ export function App() {
       <AuthProvider>
         <Routes>
           <Route path="/entrar" element={<Entrar />} />
+          <Route path="/cadastro" element={<Cadastro />} />
 
           <Route element={<RotaProtegida />}>
             <Route path="/" element={<Estudio />} />

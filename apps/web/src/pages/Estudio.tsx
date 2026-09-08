@@ -1,5 +1,6 @@
 import { useSessao } from '../auth/AuthProvider';
 import { EditorCartaz } from '../features/cartaz/EditorCartaz';
+import { BloqueioAssinatura } from '../features/assinatura/BloqueioAssinatura';
 
 const NOME_DO_PAPEL: Record<string, string> = {
   superadmin: 'Superadmin',
@@ -36,7 +37,11 @@ export function Estudio() {
         </div>
       </header>
 
-      <EditorCartaz />
+      {usuario?.bloqueado ? (
+        <BloqueioAssinatura usuario={usuario} />
+      ) : usuario ? (
+        <EditorCartaz key={`${usuario.tenantId}:${usuario.id}`} escopoFila={`${usuario.tenantId}:${usuario.id}`} />
+      ) : null}
     </>
   );
 }

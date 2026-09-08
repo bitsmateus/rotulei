@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSessao } from '../auth/AuthProvider';
 import { ErroDaApi } from '../lib/api';
 
@@ -90,6 +90,10 @@ export function Entrar() {
         >
           {enviando ? 'Entrando…' : 'Entrar'}
         </button>
+
+        <p style={{ textAlign: 'center', fontSize: 13, marginTop: 16, marginBottom: 0 }}>
+          Ainda não tem conta? <Link to="/cadastro">Teste grátis por 7 dias</Link>
+        </p>
       </form>
     </div>
   );

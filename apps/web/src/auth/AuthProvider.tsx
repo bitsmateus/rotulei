@@ -8,9 +8,11 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  cadastrar as cadastrarNaApi,
   entrar as entrarNaApi,
   recuperarSessao,
   sair as sairDaApi,
+  type DadosCadastro,
   type UsuarioDaSessao,
 } from '../lib/api';
 
@@ -18,6 +20,7 @@ interface Sessao {
   usuario: UsuarioDaSessao | null;
   carregando: boolean;
   entrar: (email: string, senha: string) => Promise<void>;
+  cadastrar: (dados: DadosCadastro) => Promise<void>;
   sair: () => Promise<void>;
 }
 
@@ -33,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelado = false;
     recuperarSessao()
       .then((u) => !cancelado && setUsuario(u))
+      .catch(() => !cancelado && setUsuario(null))
       .finally(() => !cancelado && setCarregando(false));
     return () => {
       cancelado = true;
@@ -43,14 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario(await entrarNaApi(email, senha));
   }, []);
 
+  const cadastrar = useCallback(async (dados: DadosCadastro) => {
+    setUsuario(await cadastrarNaApi(dados));
+  }, []);
+
   const sair = useCallback(async () => {
     await sairDaApi();
     setUsuario(null);
   }, []);
 
   const valor = useMemo(
-    () => ({ usuario, carregando, entrar, sair }),
-    [usuario, carregando, entrar, sair],
+    () => ({ usuario, carregando, entrar, cadastrar, sair }),
+    [usuario, carregando, entrar, cadastrar, sair],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

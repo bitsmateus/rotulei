@@ -156,7 +156,10 @@ no log de "token não confere".
 
 ## Checklist antes de abrir para cliente
 
-- [ ] `GET /api/saude` responde `"rlsAtivo": true` e `"roleDaApi": "rotulei_app"`
+- [ ] O log de boot do container mostra `conectado como "rotulei_app" (RLS ativo)`
+      (ver `database.module.ts`) — desde a auditoria de 08/09/2026, `/api/saude`
+      não devolve mais banco/role na resposta (evita expor topologia interna a
+      qualquer chamador anônimo); a verificação passou a ser pelo log de boot
 - [ ] `DATABASE_URL_ADMIN` **não** está nas variáveis do serviço `api`
 - [ ] `JWT_SECRET` e `CONFIG_SECRET` são diferentes dos usados em desenvolvimento
 - [ ] `CONFIG_SECRET` está no backup de segredos do ambiente
