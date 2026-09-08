@@ -21,9 +21,6 @@ export class SaudeController {
 
     return {
       status: 'ok',
-      banco: info.banco,
-      roleDaApi: info.role,
-      rlsAtivo: info.role === 'rotulei_app',
       agora: info.agora,
     };
   }

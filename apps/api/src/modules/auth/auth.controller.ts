@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, Post, Req } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { LoginDto, RefreshDto } from './auth.dto.js';
 import { Publico } from '../../common/decorators/publico.decorator.js';
+import { LimitarPorIp } from '../../common/guards/limite-por-ip.guard.js';
 import { PermiteQuandoBloqueado } from '../../common/decorators/permite-quando-bloqueado.decorator.js';
 import {
   UsuarioAtual,
@@ -14,6 +15,7 @@ export class AuthController {
 
   @Publico()
   @Post('login')
+  @LimitarPorIp({ limite: 20, janelaMs: 60_000 })
   @HttpCode(200)
   async login(@Body() dto: LoginDto, @Req() req: any) {
     const { accessToken, refreshToken, expiraEm } = await this.auth.login({
@@ -27,6 +29,7 @@ export class AuthController {
 
   @Publico()
   @Post('refresh')
+  @LimitarPorIp({ limite: 60, janelaMs: 60_000 })
   @HttpCode(200)
   async refresh(@Body() dto: RefreshDto, @Req() req: any) {
     const { accessToken, refreshToken, expiraEm } = await this.auth.renovar(

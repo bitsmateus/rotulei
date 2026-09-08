@@ -146,6 +146,7 @@ export class AuthService {
           'revogada_em',
         ])
         .where('token_hash', '=', hash)
+        .forUpdate()
         .executeTakeFirst();
 
       if (!sessao) throw new UnauthorizedException('Sessao invalida.');

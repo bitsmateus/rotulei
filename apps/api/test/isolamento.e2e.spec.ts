@@ -11,7 +11,7 @@
  */
 import { beforeAll, describe, expect, it } from 'vitest';
 
-const BASE = 'http://localhost:3399/api';
+const BASE = `http://localhost:${process.env.ROTULEI_TEST_PORT ?? 3399}/api`;
 const SENHA = 'rotulei-dev-2026';
 
 const CONTAS = {
@@ -66,6 +66,18 @@ beforeAll(async () => {
 });
 
 describe('cada tenant so enxerga os proprios cartazes', () => {
+  it.each(['-1', 'NaN', 'Infinity', '1.5', '0', ''])('limite invalido %s responde 400', async limite => {
+    expect((await req(`/tenant/cartazes?limite=${limite}`, { token: tokenNunes })).status).toBe(400);
+  });
+
+  it('produto composto por espacos responde 400', async () => {
+    expect((await req('/tenant/cartazes', { token: tokenNunes, method: 'POST', body: JSON.stringify({ produto: '   ' }) })).status).toBe(400);
+  });
+
+  it('operador nao acessa cobranca nem inicia checkout', async () => {
+    expect((await req('/tenant/assinatura', { token: tokenOperador })).status).toBe(403);
+    expect((await req('/tenant/assinatura/checkout', { token: tokenOperador, method: 'POST', body: '{}' })).status).toBe(403);
+  });
   it('a listagem do Nunes nao traz nada do Vizinho', async () => {
     const cartazes = await (await req('/tenant/cartazes', { token: tokenNunes })).json();
 

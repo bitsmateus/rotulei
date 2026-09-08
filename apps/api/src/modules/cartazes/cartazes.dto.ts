@@ -8,6 +8,7 @@ import {
   IsUUID,
   Max,
   MaxLength,
+  Matches,
   Min,
 } from 'class-validator';
 import { FONTES, TEMAS } from '@rotulei/shared';
@@ -22,6 +23,7 @@ export class CartazDto {
   @IsString()
   @IsNotEmpty({ message: 'Informe o produto.' })
   @MaxLength(200)
+  @Matches(/\S/, { message: 'Informe o produto.' })
   produto!: string;
 
   @IsOptional() @IsUUID() lojaId?: string | null;

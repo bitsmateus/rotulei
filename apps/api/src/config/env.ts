@@ -8,6 +8,7 @@ config({ path: resolve(import.meta.dirname, '../../../..', '.env'), quiet: true 
 const esquema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3333),
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
 
   /**
    * Conexao da API. Tem de apontar para rotulei_app — a role sem BYPASSRLS.
@@ -71,3 +72,6 @@ if (!resultado.success) {
 }
 
 export const env: Env = resultado.data;
+if (env.DESABILITAR_LIMITES && env.NODE_ENV !== 'test') {
+  throw new Error('DESABILITAR_LIMITES so pode ser usado em NODE_ENV=test.');
+}

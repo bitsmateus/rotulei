@@ -11,10 +11,9 @@ import { ConfigPlataformaService } from '../config-plataforma/config-plataforma.
  * autoritativa. Um corpo de webhook pode ser forjado; a resposta da API,
  * autenticada com nossa propria chave, nao pode.
  *
- * O token do webhook (asaas-access-token) e conferido so para LOG. Se nao
- * bater — inclusive se o Asaas ainda nao tiver sido configurado — o evento e
- * ignorado sem erro (200), porque um webhook mal configurado no painel do
- * Asaas nao deveria virar erro 500 nem reentrega agressiva por parte deles.
+ * O token do webhook (asaas-access-token) e obrigatorio. Eventos sem token
+ * valido sao ignorados (200), sem consultar o gateway nem alterar pagamentos.
+ * Mesmo autenticado, o evento precisa ser reconfirmado pela API do Asaas.
  */
 @Injectable()
 export class AsaasWebhookService {
@@ -33,11 +32,12 @@ export class AsaasWebhookService {
     if (!asaas) return { ok: true };
 
     if (!asaas.tokenDoWebhookConfere(headers)) {
-      this.log.warn('Webhook do Asaas com token ausente ou invalido — reconfirmando via API.');
+      this.log.warn('Webhook do Asaas com token ausente ou invalido — ignorado.');
+      return { ok: true };
     }
 
     const paymentId = (corpo as { payment?: { id?: string } })?.payment?.id;
-    if (!paymentId) return { ok: true };
+    if (typeof paymentId !== 'string' || !/^pay_[a-zA-Z0-9_]{1,100}$/.test(paymentId)) return { ok: true };
 
     const situacao = await asaas.consultarPagamento(paymentId);
     if (!situacao.assinaturaGatewayId) return { ok: true }; // nao e uma cobranca de assinatura

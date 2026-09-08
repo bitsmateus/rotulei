@@ -6,7 +6,7 @@
  */
 import { beforeAll, describe, expect, it } from 'vitest';
 
-const BASE = 'http://localhost:3399/api';
+const BASE = `http://localhost:${process.env.ROTULEI_TEST_PORT ?? 3399}/api`;
 
 const SENHA = 'rotulei-dev-2026';
 const ADMIN = 'admin@mercadonunes.com.br';
@@ -43,9 +43,13 @@ describe('rotas publicas', () => {
 
     const corpo = await r.json();
     expect(corpo.status).toBe('ok');
-    // Se isto virar false, o isolamento entre tenants esta DESLIGADO.
-    expect(corpo.rlsAtivo).toBe(true);
-    expect(corpo.roleDaApi).toBe('rotulei_app');
+    // Banco/role saíram da resposta de proposito (nao expor topologia interna
+    // a qualquer chamador anonimo) — quem verifica RLS ativo agora e o log de
+    // boot ("conectado como rotulei_app (RLS ativo)") ou db/tests/role-segura.spec.ts,
+    // nao mais este endpoint publico.
+    expect(corpo).not.toHaveProperty('banco');
+    expect(corpo).not.toHaveProperty('roleDaApi');
+    expect(r.headers.get('cache-control')).toBe('no-store');
   });
 
   it('o catalogo de planos e legivel sem login', async () => {
@@ -191,6 +195,16 @@ describe('o token carrega o tenant, e o cliente nao escolhe qual', () => {
 });
 
 describe('refresh com rotacao', () => {
+  it('duas renovacoes simultaneas nao emitem duas sessoes validas', async () => {
+    const sessao = await entrar(ADMIN);
+    const respostas = await Promise.all([
+      post('/auth/refresh', { refreshToken: sessao.refreshToken }),
+      post('/auth/refresh', { refreshToken: sessao.refreshToken }),
+    ]);
+    expect(respostas.map(r => r.status).sort()).toEqual([200, 401]);
+    const emitida = await respostas.find(r => r.status === 200)!.json();
+    expect((await post('/auth/refresh', { refreshToken: emitida.refreshToken })).status).toBe(401);
+  });
   it('troca o refresh por um par novo', async () => {
     const sessao = await entrar(ADMIN);
     const r = await post('/auth/refresh', { refreshToken: sessao.refreshToken });

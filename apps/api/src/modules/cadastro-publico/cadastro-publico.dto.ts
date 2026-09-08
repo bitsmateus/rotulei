@@ -3,6 +3,7 @@ import { IsEmail, IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'cl
 export class CadastroPublicoDto {
   @IsString()
   @IsNotEmpty({ message: 'Informe o nome do mercado.' })
+  @Matches(/\S/, { message: 'Informe o nome do mercado.' })
   @MaxLength(200)
   nomeMercado!: string;
 
@@ -16,6 +17,7 @@ export class CadastroPublicoDto {
 
   @IsString()
   @IsNotEmpty({ message: 'Informe seu nome.' })
+  @Matches(/\S/, { message: 'Informe seu nome.' })
   @MaxLength(200)
   nomeAdmin!: string;
 

@@ -1,6 +1,7 @@
 import { Controller, Get, Post } from '@nestjs/common';
 import { AssinaturaService } from './assinatura.service.js';
 import { PermiteQuandoBloqueado } from '../../common/decorators/permite-quando-bloqueado.decorator.js';
+import { Papeis } from '../../common/decorators/papeis.decorator.js';
 import {
   UsuarioAtual,
   type UsuarioAutenticado,
@@ -12,6 +13,7 @@ import {
  * marcacao, o proprio guard que aplica o bloqueio impediria o desbloqueio.
  */
 @PermiteQuandoBloqueado()
+@Papeis('admin')
 @Controller('tenant/assinatura')
 export class AssinaturaController {
   constructor(private readonly assinatura: AssinaturaService) {}

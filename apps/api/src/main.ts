@@ -8,11 +8,18 @@ import { env } from './config/env.js';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: false });
 
-  // Atras do nginx do container web (que faz proxy de /api para ca) e do
-  // Traefik do EasyPanel na frente dele: sem isto, `req.ip` seria sempre o IP
-  // do proxy, nao do visitante — e o rate limiting por IP (LimitePorIpGuard)
-  // acabaria valendo para todo mundo junto, em vez de pessoa por pessoa.
-  app.set('trust proxy', 1);
+  // Acesso direto nao confia em X-Forwarded-For enviado pelo visitante.
+  // No deploy, configure a quantidade exata de proxies confiaveis e mantenha
+  // a API inacessivel por caminhos que contornem esses proxies.
+  app.set('trust proxy', env.TRUST_PROXY_HOPS || false);
+  app.disable('x-powered-by');
+  app.use((_req: unknown, res: { setHeader: (name: string, value: string) => void }, next: () => void) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    next();
+  });
 
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));

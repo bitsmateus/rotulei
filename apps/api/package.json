@@ -10,7 +10,7 @@
     "db:migrate": "tsx db/scripts/migrate.ts up",
     "db:migrate:down": "tsx db/scripts/migrate.ts down",
     "db:seed": "tsx db/scripts/seed.ts",
-    "test": "vitest run",
+    "test": "node test/executar-isolado.mjs",
     "test:watch": "vitest",
     "pretest": "npm run build",
     "predev": "npm run build -w @rotulei/shared"

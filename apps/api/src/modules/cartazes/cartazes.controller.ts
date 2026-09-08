@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -29,6 +30,9 @@ export class CartazesController {
 
   @Get()
   listar(@Query('limite') limite?: string) {
+    if (limite !== undefined && (!/^\d+$/.test(limite) || !Number.isSafeInteger(Number(limite)) || Number(limite) < 1)) {
+      throw new BadRequestException('Limite deve ser um inteiro positivo.');
+    }
     return this.cartazes.listar(limite ? Number(limite) : undefined);
   }
 

@@ -17,7 +17,7 @@ import { cnpjValido, cpfValido, telefoneValido } from './documentos-teste';
 
 config({ path: resolve(process.cwd(), '../../.env'), quiet: true });
 
-const BASE = 'http://localhost:3399/api';
+const BASE = `http://localhost:${process.env.ROTULEI_TEST_PORT ?? 3399}/api`;
 const SENHA = 'senha-bem-forte-para-teste-123';
 
 async function post(caminho: string, corpo: unknown, token?: string) {

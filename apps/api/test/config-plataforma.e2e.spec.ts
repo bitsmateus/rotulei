@@ -6,7 +6,7 @@
  */
 import { beforeAll, describe, expect, it } from 'vitest';
 
-const BASE = 'http://localhost:3399/api';
+const BASE = `http://localhost:${process.env.ROTULEI_TEST_PORT ?? 3399}/api`;
 const SENHA = 'rotulei-dev-2026';
 
 async function post(caminho: string, corpo: unknown, token?: string, method = 'POST') {

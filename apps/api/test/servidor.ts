@@ -9,7 +9,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { resolve } from 'node:path';
 
-const PORTA = 3399;
+const PORTA = Number(process.env.ROTULEI_TEST_PORT ?? 3399);
 export const BASE = `http://localhost:${PORTA}/api`;
 
 let servidor: ChildProcess | undefined;
@@ -44,7 +44,9 @@ export async function setup() {
   });
 
   let saida = '';
+  let pronto = false;
   servidor.stdout?.on('data', (d) => (saida += d));
+  servidor.stdout?.on('data', (d) => { if (String(d).includes('Rotulei API em')) pronto = true; });
   servidor.stderr?.on('data', (d) => (saida += d));
   servidor.on('exit', (codigo) => {
     if (codigo !== 0 && codigo !== null) {
@@ -52,12 +54,24 @@ export async function setup() {
     }
   });
 
-  await esperarSubir().catch((erro) => {
+  await (async () => {
+    for (let tentativa = 0; tentativa < 100; tentativa++) {
+      if (servidor?.exitCode !== null) throw new Error('A API de teste encerrou antes de iniciar.');
+      if (pronto) return esperarSubir();
+      await new Promise(r => setTimeout(r, 150));
+    }
+    throw new Error('A API de teste nao iniciou a tempo.');
+  })().catch((erro) => {
+    servidor?.kill();
     console.error(saida);
     throw erro;
   });
 }
 
 export async function teardown() {
-  servidor?.kill();
+  if (servidor && servidor.exitCode === null) {
+    const encerrado = new Promise<void>(r => servidor!.once('exit', () => r()));
+    servidor.kill();
+    await encerrado;
+  }
 }

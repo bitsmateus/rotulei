@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 import { cnpjValido, cpfValido, telefoneValido } from './documentos-teste';
 
-const BASE = 'http://localhost:3399/api';
+const BASE = `http://localhost:${process.env.ROTULEI_TEST_PORT ?? 3399}/api`;
 
 async function post(caminho: string, corpo: unknown, token?: string) {
   return fetch(`${BASE}${caminho}`, {

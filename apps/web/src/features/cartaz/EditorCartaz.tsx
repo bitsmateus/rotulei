@@ -42,14 +42,15 @@ const INTERRUPTORES: readonly { campo: keyof Cartaz; rotulo: string }[] = [
 
 export interface EditorCartazProps {
   logoUrl?: string | null;
+  escopoFila: string;
 }
 
-export function EditorCartaz({ logoUrl = null }: EditorCartazProps) {
+export function EditorCartaz({ logoUrl = null, escopoFila }: EditorCartazProps) {
   useFontesDoCartaz();
 
   const [cartaz, setCartaz] = useState<Cartaz>(() => cartazVazio(crypto.randomUUID()));
   const [escala, setEscala] = useState(() => escalaDaPrevia(window.innerWidth));
-  const { fila, adicionar, remover, limpar } = useFilaDeImpressao();
+  const { fila, adicionar, remover, limpar } = useFilaDeImpressao(escopoFila);
   const { paraImprimir, imprimir } = useImpressao();
 
   useEffect(() => {
