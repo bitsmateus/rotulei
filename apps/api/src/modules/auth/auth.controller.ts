@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, Post, Req } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { LoginDto, RefreshDto } from './auth.dto.js';
 import { Publico } from '../../common/decorators/publico.decorator.js';
+import { PermiteQuandoBloqueado } from '../../common/decorators/permite-quando-bloqueado.decorator.js';
 import {
   UsuarioAtual,
   type UsuarioAutenticado,
@@ -45,13 +46,18 @@ export class AuthController {
     await this.auth.encerrar(dto.refreshToken);
   }
 
+  @PermiteQuandoBloqueado()
   @Post('logout-total')
   @HttpCode(204)
   async logoutTotal(@UsuarioAtual() usuario: UsuarioAutenticado) {
     await this.auth.encerrarTodas(usuario.id);
   }
 
-  /** Quem sou eu — o front usa para reidratar a sessao ao abrir a pagina. */
+  /**
+   * Quem sou eu — o front usa para reidratar a sessao ao abrir a pagina, e
+   * tambem para decidir se mostra a tela de cobranca (usuario.bloqueado).
+   */
+  @PermiteQuandoBloqueado()
   @Get('eu')
   eu(@UsuarioAtual() usuario: UsuarioAutenticado) {
     return usuario;

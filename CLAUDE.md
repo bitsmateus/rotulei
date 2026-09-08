@@ -15,10 +15,21 @@ esse filtro "por segurança", o que está faltando é contexto de sessão, não 
 contexto e não vê linha nenhuma — o modo de falha é negar, mas o sintoma vai
 parecer "sumiu tudo".
 
-**3. `comoSistema()` é o único caminho cross-tenant.**
-Não existe JWT que produza esse contexto. Se você precisar dele numa rota
-autenticada, provavelmente o desenho está errado — para superadmin existe o papel
-`superadmin`, que passa pelo guard normal.
+**3. `comoSistema()` tem dois usos legítimos: cross-tenant, e config de plataforma.**
+Não existe JWT que produza o contexto `sistema`. Se você precisar dele numa rota
+autenticada para ler/escrever dado de TENANT, o desenho está errado — para
+superadmin existe o papel `superadmin`, que passa pelo guard normal. A exceção é
+ler `config_plataforma` (credencial do Asaas): isso não é dado de tenant nenhum,
+é config global que o serviço lê em nome de quem chamou — `ConfigPlataformaService.
+obterCredenciais()` faz isso de propósito, e nunca deve devolver o valor decifrado
+por um controller.
+
+**3a. `bloqueado` vem do JWT, não de uma consulta por request.**
+Um tenant inadimplente (Opção B — DECISOES.md #18) ainda consegue logar; o que
+fecha é o acesso às rotas de negócio, via `claims.bloqueado` checado no
+`AuthGuard`. Igual ao resto do token, fica desatualizado por até
+`ACCESS_TOKEN_MINUTOS` — não adicione um SELECT por request para "corrigir"
+isso, é a mesma folga que já existia para suspensão via webhook.
 
 **4. `DATABASE_URL` aponta para `rotulei_app`, sempre.**
 Apontar para o owner desliga o RLS sem gerar erro nenhum. O boot checa isso e se

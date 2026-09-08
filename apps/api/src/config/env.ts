@@ -29,6 +29,16 @@ const esquema = z.object({
 
   /** Refresh token longo, mas rotacionado a cada uso. */
   REFRESH_TOKEN_DIAS: z.coerce.number().int().positive().default(30),
+
+  /**
+   * Chave de cifra dos segredos guardados no banco (hoje, o token do Asaas —
+   * DECISOES.md #17). NUNCA fica no banco: e o que faz um dump sozinho nao
+   * bastar para ler a credencial. Perder esta variavel e perder os segredos
+   * cifrados com ela — faz parte do procedimento de backup (ver DEPLOY.md).
+   */
+  CONFIG_SECRET: z.string().min(32, 'use ao menos 32 caracteres'),
+  /** Preenchida so durante uma rotacao de CONFIG_SECRET; depois, remova. */
+  CONFIG_SECRET_OLD: z.string().min(32).optional(),
 });
 
 export type Env = z.infer<typeof esquema>;

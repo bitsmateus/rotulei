@@ -114,6 +114,28 @@ acima do preço, que parece exagerada e não é.
 | 1 | Setup + schema multi-tenant com RLS | pronto |
 | 2 | Motor de cartaz portado | pronto |
 | 3 | Auth + papéis | pronto (API + login no front) |
-| 4 | Cadastro público + trial | não começado |
-| 5 | Integração Asaas | bloqueado — ver DECISOES.md |
-| 6–9 | Painéis, ajuda, melhorias | não começados |
+| 4 | Cadastro público + trial | pronto (API; falta tela no front) |
+| 5 | Integração Asaas | pronto na API — ver DECISOES.md #19 para confirmar |
+| 6 | Painel superadmin | só a fatia de configuração do Asaas |
+| 7–9 | Painel do tenant, ajuda, melhorias | não começados |
+
+## Trial, bloqueio e cobrança (itens 4, 5, 6-fatia)
+
+Fluxo real, sem período de carência:
+
+1. **Cadastro público** (`POST /public/cadastro`) cria o tenant em `trial`,
+   sem pedir cartão, e já devolve os tokens — o admin entra direto.
+2. **`TrialService`** roda todo dia (e também ao subir o container) e vira
+   `inadimplente` todo tenant em `trial` cujo prazo passou.
+3. **`inadimplente` bloqueia o produto, não o login.** O JWT carrega
+   `bloqueado: true`; toda rota de negócio responde **402**, exceto as
+   marcadas `@PermiteQuandoBloqueado()` (auth, `/tenant/assinatura/*`).
+4. O admin abre a tela de cobrança, chama `POST /tenant/assinatura/checkout` e
+   é redirecionado para um link **hospedado no Asaas** — o Rotulei nunca vê
+   número de cartão (DECISOES.md #19).
+5. O Asaas confirma por webhook (`POST /webhooks/asaas`), que **nunca confia
+   no corpo do evento**: sempre reconsulta a API do Asaas antes de liberar o
+   tenant (DECISOES.md #22).
+
+Credencial do Asaas fica cifrada no banco (AES-256-GCM), configurável pelo
+superadmin em vez de variável de ambiente — DECISOES.md #17.

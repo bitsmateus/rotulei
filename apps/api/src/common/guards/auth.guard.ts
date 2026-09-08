@@ -10,8 +10,10 @@ import type { PapelUsuario } from '@rotulei/shared';
 import { AuthService } from '../../modules/auth/auth.service.js';
 import { CHAVE_PUBLICO } from '../decorators/publico.decorator.js';
 import { CHAVE_PAPEIS } from '../decorators/papeis.decorator.js';
+import { CHAVE_PERMITE_BLOQUEADO } from '../decorators/permite-quando-bloqueado.decorator.js';
 import { armazenamentoDeContexto } from '../../database/contexto.js';
 import type { UsuarioAutenticado } from '../decorators/usuario-atual.decorator.js';
+import { TenantBloqueadoException } from '../excecoes/tenant-bloqueado.exception.js';
 
 /**
  * Guard global: valida o token, monta o contexto de sessao e confere o papel.
@@ -60,11 +62,26 @@ export class AuthGuard implements CanActivate {
       throw new ForbiddenException('Seu papel nao tem acesso a esta operacao.');
     }
 
+    /*
+     * Tenant inadimplente (Opcao B — DECISOES.md #18): o login foi permitido de
+     * proposito para o admin conseguir pagar, mas toda rota de negocio fica
+     * fechada ate a conta voltar a 'ativo'. As excecoes sao marcadas com
+     * @PermiteQuandoBloqueado() — hoje, /auth/* e o checkout da assinatura.
+     */
+    const permiteBloqueado = this.reflector.getAllAndOverride<boolean>(
+      CHAVE_PERMITE_BLOQUEADO,
+      alvos,
+    );
+    if (claims.bloqueado && !permiteBloqueado) {
+      throw new TenantBloqueadoException();
+    }
+
     const usuario: UsuarioAutenticado = {
       id: claims.sub,
       tenantId: claims.tid,
       lojaId: claims.lid,
       papel: claims.papel,
+      bloqueado: claims.bloqueado,
     };
     req.usuario = usuario;
 

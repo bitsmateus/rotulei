@@ -7,7 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { createHash, randomBytes } from 'node:crypto';
-import { STATUS_COM_ACESSO, type PapelUsuario, type StatusTenant } from '@rotulei/shared';
+import { STATUS_QUE_PODE_LOGAR, type PapelUsuario, type StatusTenant } from '@rotulei/shared';
 import { ContextoDbService, type Trx } from '../../database/contexto-db.service.js';
 import { env } from '../../config/env.js';
 
@@ -19,6 +19,17 @@ export interface ClaimsDoToken {
   papel: PapelUsuario;
   /** loja a que o operador esta fixado, se houver */
   lid: string | null;
+  /**
+   * Tenant inadimplente (Opcao B): true quando o tenant existe mas nao tem
+   * acesso ao produto — trial vencido ou cobranca recusada. O usuario AINDA
+   * consegue logar (e o ponto: precisa entrar para pagar), mas o
+   * BloqueioInadimplenciaGuard recusa toda rota de negocio, deixando passar so
+   * as marcadas @PermiteQuandoBloqueado() (auth, checkout de assinatura).
+   *
+   * Fica desatualizado por ate ACCESS_TOKEN_MINUTOS, como o resto do token —
+   * mesmo compromisso ja aceito para suspensao via webhook.
+   */
+  bloqueado: boolean;
 }
 
 export interface ParDeTokens {
@@ -98,7 +109,7 @@ export class AuthService {
         throw new ForbiddenException('Usuario desativado.');
       }
 
-      await this.exigirTenantComAcesso(trx, usuario.tenant_id);
+      const bloqueado = await this.verificarTenantPodeLogar(trx, usuario.tenant_id);
 
       await trx
         .updateTable('usuarios')
@@ -111,6 +122,7 @@ export class AuthService {
         tenantId: usuario.tenant_id,
         lojaId: usuario.loja_id,
         papel: usuario.papel,
+        bloqueado,
         userAgent: dados.userAgent ?? null,
         ip: dados.ip ?? null,
       });
@@ -169,15 +181,17 @@ export class AuthService {
 
       if (!usuario || !usuario.ativo) throw new UnauthorizedException('Sessao invalida.');
 
-      // Revalida o tenant a cada renovacao: e o que faz um tenant suspenso pelo
-      // webhook perder o acesso em ate 15 minutos, sem precisar de logout.
-      await this.exigirTenantComAcesso(trx, usuario.tenant_id);
+      // Revalida o tenant a cada renovacao: e o que faz uma mudanca de status
+      // (job de fim de trial, webhook de pagamento, suspensao manual) valer em
+      // ate 15 minutos, sem precisar de logout.
+      const bloqueado = await this.verificarTenantPodeLogar(trx, usuario.tenant_id);
 
       const tokens = await this.emitirTokens(trx, {
         usuarioId: usuario.id,
         tenantId: usuario.tenant_id,
         lojaId: usuario.loja_id,
         papel: usuario.papel,
+        bloqueado,
         userAgent: userAgent ?? null,
         ip: ip ?? null,
       });
@@ -239,9 +253,13 @@ export class AuthService {
 
   // ── internos ───────────────────────────────────────────────────────────────
 
-  private async exigirTenantComAcesso(trx: Trx, tenantId: string | null): Promise<void> {
+  /**
+   * Retorna `bloqueado` (true = inadimplente, mas pode logar) ou lanca excecao
+   * para os status que nao admitem autoatendimento (suspenso, cancelado).
+   */
+  private async verificarTenantPodeLogar(trx: Trx, tenantId: string | null): Promise<boolean> {
     // Superadmin nao pertence a tenant nenhum.
-    if (!tenantId) return;
+    if (!tenantId) return false;
 
     const tenant = await trx
       .selectFrom('tenants')
@@ -251,13 +269,18 @@ export class AuthService {
 
     if (!tenant) throw new UnauthorizedException('E-mail ou senha invalidos.');
 
-    if (!STATUS_COM_ACESSO.includes(tenant.status as StatusTenant)) {
-      // Mensagem explicita: aqui o usuario precisa saber o que aconteceu para
-      // resolver (pagar), diferente do login, onde vagueza e proposital.
+    const status = tenant.status as StatusTenant;
+    if (!STATUS_QUE_PODE_LOGAR.includes(status)) {
+      // Mensagem explicita: aqui o usuario precisa saber o que aconteceu,
+      // diferente do login por senha errada, onde vagueza e proposital.
       throw new ForbiddenException(
-        `Conta ${tenant.status}. Regularize a assinatura para voltar a usar o Rotulei.`,
+        status === 'suspenso'
+          ? 'Esta conta foi suspensa. Fale com o suporte para reativar.'
+          : 'Esta conta foi cancelada.',
       );
     }
+
+    return status === 'inadimplente';
   }
 
   private async emitirTokens(
@@ -267,6 +290,7 @@ export class AuthService {
       tenantId: string | null;
       lojaId: string | null;
       papel: PapelUsuario;
+      bloqueado: boolean;
       userAgent: string | null;
       ip: string | null;
     },
@@ -276,6 +300,7 @@ export class AuthService {
       tid: dados.tenantId,
       papel: dados.papel,
       lid: dados.lojaId,
+      bloqueado: dados.bloqueado,
     };
 
     const accessToken = await this.jwt.signAsync(claims);

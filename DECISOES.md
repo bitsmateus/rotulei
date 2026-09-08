@@ -297,3 +297,123 @@ Junto vem o `LICENSE-masters.txt`. **Lembrete de licença:** só o corte gratuit
 Você confirmou que ainda não tem esse arquivo. O `CartazA4` aceita `logoUrl`;
 hoje nada é passado, então o bloco da logo não aparece. Vai ser resolvido de
 verdade no item 7 (marca própria por tenant), quando cada tenant tiver a sua.
+
+---
+
+# Itens 4, 5 e a fatia de configuração do item 6 — 08/09/2026
+
+Construídos na mesma sessão, na sequência: config do Asaas → cadastro público →
+job de fim de trial → checkout → webhook. 159 testes (125 API + 34 web), banco
+recriado do zero.
+
+## 19. Checkout hospedado no Asaas — o Rotulei nunca toca em cartão
+
+A assinatura é criada com `billingType: UNDEFINED`: o Asaas devolve um link
+(`invoiceUrl`) onde o **próprio tenant** escolhe Pix/boleto/cartão numa página
+do Asaas. O Rotulei nunca recebe um número de cartão.
+
+**Por quê, e o que isso custa:** a alternativa — um formulário de cartão dentro
+do Rotulei — colocaria o produto em escopo de PCI-DSS (a auto-avaliação SAQ D,
+a mais pesada: exige segmentação de rede, varredura trimestral, etc.). Com
+checkout hospedado, o Rotulei fica em SAQ A (o mais leve: nunca vê, processa ou
+armazena dado de cartão). O custo é UX: o tenant sai do app e entra numa página
+do Asaas para pagar, em vez de preencher um campo de cartão sem sair da tela de
+bloqueio. Dado que "pede cartão dentro do app" (sua instrução) pode ser lido
+como "o app conduz o fluxo, sem ir para fora" — o que a implementação faz — ou
+como "um campo de cartão embutido na própria tela" — o que eu **não** fiz —
+**esta é uma decisão que vale sua confirmação explícita.** Se você quiser o
+campo embutido, é trocar o `billingType` e adicionar tokenização de cartão no
+frontend (o Asaas oferece isso), mas o produto passa a carregar escopo de PCI.
+
+## 20. O JWT carrega `bloqueado`, não é um guard que consulta o banco a cada request
+
+Antes desta sessão, um tenant fora de `STATUS_COM_ACESSO` era barrado no
+**login**. Isso quebraria a Opção B: o admin precisa conseguir entrar para
+pagar. A correção foi separar duas coisas que estavam juntas:
+
+- `STATUS_QUE_PODE_LOGAR` (`trial`, `ativo`, `inadimplente`) — decide se o
+  login é aceito. `suspenso` e `cancelado` continuam bloqueando o login por
+  inteiro (são decisão humana ou fim de linha; não há autoatendimento).
+- `bloqueado: boolean` no JWT — decide se as rotas de negócio respondem 402.
+  Calculado uma vez, no login/refresh, e carregado no token — **não** é
+  recalculado a cada request. Um `BloqueioInadimplenciaGuard` (na prática,
+  incorporado ao `AuthGuard` existente) rejeita com 402 qualquer rota que não
+  esteja marcada `@PermiteQuandoBloqueado()`.
+
+**Por que não checar o banco a cada request:** o projeto já tinha esse
+compromisso — o comentário original em `renovar()` dizia "revalida o tenant a
+cada renovação: é o que faz um tenant suspenso pelo webhook perder o acesso em
+até 15 minutos". Ou seja, uma janela de defasagem de até
+`ACCESS_TOKEN_MINUTOS` já era aceita antes de eu mexer em nada. Estender essa
+mesma folga para o bloqueio por inadimplência é consistente, não uma
+concessão nova — e evita uma consulta ao banco em toda chamada autenticada.
+
+**Teste que prova a folga:** `test/bloqueio.e2e.spec.ts` — o access token
+emitido durante o cadastro (quando o tenant ainda era `trial`) continua
+respondendo `bloqueado: false` mesmo depois do banco já dizer
+`inadimplente`; só o próximo `refresh` reflete a mudança.
+
+## 21. `pagamentos.metodo` é opcional — migration 0012
+
+Consequência direta do checkout sem forma definida (decisão #19): no momento
+em que o Rotulei cria a cobrança, ainda não se sabe se o tenant vai pagar via
+Pix, boleto ou cartão — só o Asaas sabe, depois que a pessoa escolhe na página
+dele. A coluna nasceu `NOT NULL` na migration 0011 (antes de eu perceber essa
+implicação ao implementar o cliente); a 0012 corrige com uma migration nova,
+não reescrevendo a 0011 — a mesma disciplina que o resto do projeto já segue
+para todo schema que passou a existir de verdade em algum ambiente.
+
+## 22. Webhook nunca confia no corpo — sempre reconsulta a API do Asaas
+
+Padrão trazido do Recorrai (mesmo problema resolvido antes, no motor de
+cobrança que você me indicou para checar). Um corpo de webhook pode ser
+forjado por qualquer um que descubra a URL; a resposta de uma consulta
+autenticada com a própria API key do Rotulei, não. O
+`AsaasWebhookService.processar` extrai só o `payment.id` do corpo e usa isso
+como uma pista de "vá conferir" — o status real, o método de pagamento e o
+valor vêm sempre de `GET /payments/{id}`.
+
+O token do webhook (`asaas-access-token`) é conferido, mas só para **log**: se
+não bater, o evento não é descartado — só gera um aviso e segue para a
+reconfirmação via API. Um webhook mal configurado no painel do Asaas não pode
+virar "pagamento confirmado nunca chega", que seria pior que aceitar demais.
+
+## 23. Renovação recusada reusa o mesmo fluxo do fim de trial
+
+O ESCOPO.md original previa `status=suspenso` para "webhook: recusado/sem
+pagamento". Com a Opção B, simplifiquei: **qualquer** falha de cobrança —
+trial vencido ou renovação recusada — leva a `inadimplente`, o mesmo estado,
+com o mesmo caminho de desbloqueio (entrar e pagar). `suspenso` fica só para
+ação manual do superadmin.
+
+**O que isso NÃO cobre, de propósito, por ora:** não há régua de cobrança
+(tentar de novo em X dias antes de bloquear), nem período de carência depois
+de uma renovação recusada — o bloqueio é imediato no primeiro evento `VENCIDA`.
+Se isso for agressivo demais na prática (cartão que falha uma vez por
+oscilação do banco emissor, por exemplo), é ajuste no
+`AsaasWebhookService`, não redesenho.
+
+---
+
+# Pendências novas que dependem de você
+
+## Confirmar a decisão #19 (checkout hospedado vs. campo de cartão embutido)
+
+Veja o texto completo acima. Fiz a escolha de menor risco/custo de compliance
+sem poder confirmar com você primeiro — é a que eu recomendaria, mas quero seu
+aval antes de considerar o item 5 fechado de verdade.
+
+## Cadastro público sem limite de tentativas
+
+`POST /public/cadastro` é uma rota pública e sem esse limite, alguém pode
+escrever um script e criar centenas de tenants em trial. Não implementei
+rate-limiting nesta sessão (adicionar `@nestjs/throttler` é direto, mas mexer
+em infraestrutura de request nova sem você por perto para revisar pareceu mais
+arriscado do que valia a pena). **Recomendo tratar antes de divulgar a URL de
+cadastro publicamente.**
+
+## Configurar o webhook no painel do Asaas
+
+Depois do deploy, cadastre `https://{seu-dominio}/api/webhooks/asaas` no
+painel do Asaas (Configurações → Integrações → Webhooks), com o mesmo
+`webhookToken` que você colocar na tela de configuração do superadmin.

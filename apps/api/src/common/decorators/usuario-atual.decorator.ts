@@ -6,6 +6,8 @@ export interface UsuarioAutenticado {
   tenantId: string | null;
   lojaId: string | null;
   papel: ClaimsDoToken['papel'];
+  /** Tenant inadimplente — ver ClaimsDoToken.bloqueado. */
+  bloqueado: boolean;
 }
 
 /** Injeta o usuario do token no handler: `verificar(@UsuarioAtual() u) {...}`. */

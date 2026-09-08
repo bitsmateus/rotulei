@@ -1,14 +1,32 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from './database/database.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { AuthGuard } from './common/guards/auth.guard.js';
 import { SaudeModule } from './modules/saude/saude.module.js';
 import { PlanosModule } from './modules/planos/planos.module.js';
 import { CartazesModule } from './modules/cartazes/cartazes.module.js';
+import { CadastroPublicoModule } from './modules/cadastro-publico/cadastro-publico.module.js';
+import { ConfigPlataformaModule } from './modules/config-plataforma/config-plataforma.module.js';
+import { AsaasModule } from './modules/asaas/asaas.module.js';
+import { AssinaturaModule } from './modules/assinatura/assinatura.module.js';
+import { TrialModule } from './modules/trial/trial.module.js';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, SaudeModule, PlanosModule, CartazesModule],
+  imports: [
+    ScheduleModule.forRoot(),
+    DatabaseModule,
+    AuthModule,
+    SaudeModule,
+    PlanosModule,
+    CartazesModule,
+    CadastroPublicoModule,
+    ConfigPlataformaModule,
+    AsaasModule,
+    AssinaturaModule,
+    TrialModule,
+  ],
   providers: [
     // Guard GLOBAL: toda rota nasce protegida. Para abrir uma, escreva
     // @Publico() nela — o contrario (proteger uma a uma) esquece rota.

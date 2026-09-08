@@ -64,9 +64,17 @@ Variáveis de ambiente:
 | `JWT_SECRET` | gere: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` |
 | `ACCESS_TOKEN_MINUTOS` | `15` |
 | `REFRESH_TOKEN_DIAS` | `30` |
+| `CONFIG_SECRET` | gere com o mesmo comando do `JWT_SECRET`, **use um valor diferente** |
 
 **Não coloque `DATABASE_URL_ADMIN` aqui.** A API não precisa dela, e o container
 não deveria ser capaz de criar roles.
+
+**`CONFIG_SECRET` é a chave que cifra o token do Asaas guardado no banco**
+(DECISOES.md #17). Perder essa variável é perder o acesso à credencial cifrada
+— **inclua-a no backup de segredos do ambiente, separado do backup do banco.**
+Trocar `CONFIG_SECRET` sem migrar antes (`CONFIG_SECRET_OLD` + recadastrar a
+credencial) derruba a cobrança até alguém entrar de novo em
+Configurações → Asaas e salvar a chave outra vez.
 
 O container roda `db:migrate` antes de subir a API — atualizar a versão já migra
 o banco, sem depender de alguém lembrar.
@@ -117,13 +125,45 @@ que um admin de tenant crie superadmin, que é justamente o objetivo.
 Os planos também precisam existir. Extraia o bloco `PLANOS` de
 `apps/api/db/scripts/seed.ts` ou insira à mão.
 
+## 6. Configurar o Asaas
+
+Faça login como superadmin e abra Configurações → Asaas (`PUT /admin/config/asaas`
+por baixo dos panos). Preencha:
+
+- **Ambiente:** `sandbox` até validar o fluxo de ponta a ponta; troque para
+  `production` só depois de testar um checkout completo.
+- **API Key:** a chave do painel do Asaas (Configurações → Integrações → API).
+- **Webhook Token:** um valor à sua escolha — é o mesmo que você vai colocar no
+  cadastro do webhook, no passo seguinte.
+
+A resposta traz `conexaoOk` — se vier `false`, a chave está errada ou o
+ambiente não bate (sandbox vs. produção). Salvar não é bloqueado por isso, mas
+nenhum tenant vai conseguir pagar até `conexaoOk` ficar `true`.
+
+Depois, cadastre no painel do Asaas (Configurações → Integrações → Webhooks):
+
+```
+URL:   https://{seu-dominio}/api/webhooks/asaas
+Token: o mesmo Webhook Token de cima
+```
+
+O token do webhook só é conferido para log — quem decide de verdade se um
+pagamento foi confirmado é sempre uma nova consulta à API do Asaas
+(DECISOES.md #22). Configurar errado não quebra a cobrança, só tira o aviso
+no log de "token não confere".
+
 ---
 
 ## Checklist antes de abrir para cliente
 
 - [ ] `GET /api/saude` responde `"rlsAtivo": true` e `"roleDaApi": "rotulei_app"`
 - [ ] `DATABASE_URL_ADMIN` **não** está nas variáveis do serviço `api`
-- [ ] `JWT_SECRET` é diferente do usado em desenvolvimento
+- [ ] `JWT_SECRET` e `CONFIG_SECRET` são diferentes dos usados em desenvolvimento
+- [ ] `CONFIG_SECRET` está no backup de segredos do ambiente
 - [ ] Backup automático do Postgres ligado e testado (restaurar, não só gerar)
 - [ ] Postgres e API sem porta pública
 - [ ] Fontes `.otf` presentes em `apps/web/public/fonts/` (ver DECISOES.md)
+- [ ] Asaas configurado com `conexaoOk: true` e ambiente `production`
+- [ ] Webhook cadastrado no painel do Asaas apontando para `/api/webhooks/asaas`
+- [ ] Rate limiting no `POST /public/cadastro` antes de divulgar a URL (ver
+      DECISOES.md — pendência aberta, não implementado)

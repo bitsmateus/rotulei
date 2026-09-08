@@ -61,6 +61,9 @@ export interface DB {
   sessoes: SessaoTable;
   cartazes: CartazTable;
   layouts_salvos: LayoutSalvoTable;
+  config_plataforma: ConfigPlataformaTable;
+  assinaturas: AssinaturaTable;
+  pagamentos: PagamentoTable;
 }
 
 export interface SessaoTable {
@@ -117,6 +120,42 @@ export interface LayoutSalvoTable {
   nome: string;
   patch: Generated<Record<string, unknown>>;
   criado_por: string | null;
+  criado_em: Gerada;
+  atualizado_em: Gerada;
+}
+
+export interface ConfigPlataformaTable {
+  id: Generated<string>;
+  chave: string;
+  ambiente: Generated<string>;
+  credenciais_cifradas: string;
+  credencial_dica: string | null;
+  atualizado_por: string | null;
+  criado_em: Gerada;
+  atualizado_em: Gerada;
+}
+
+export interface AssinaturaTable {
+  id: Generated<string>;
+  tenant_id: string;
+  plano_id: string;
+  gateway_subscription_id: string | null;
+  status: Generated<string>;
+  ciclo: Generated<string>;
+  proxima_cobranca_em: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  criado_em: Gerada;
+  atualizado_em: Gerada;
+}
+
+export interface PagamentoTable {
+  id: Generated<string>;
+  tenant_id: string;
+  assinatura_id: string | null;
+  valor_centavos: number;
+  metodo: string | null;
+  status: Generated<string>;
+  gateway_payment_id: string | null;
+  pago_em: ColumnType<Date | null, Date | string | null, Date | string | null>;
   criado_em: Gerada;
   atualizado_em: Gerada;
 }
